@@ -1,5 +1,5 @@
 Template.board.helpers({
-  rows: [ 1,  2,  3,  4,  5,  6,  7,  8 ],
+  rows: [ 8,  7,  6,  5,  4,  3,  2,  1 ],
   charCols: [
     { 'a': 1 },
     { 'b': 2 },
@@ -14,23 +14,23 @@ Template.board.helpers({
 
 Template.row.helpers({
   cols: [
-    { 'a': 1 },
-    { 'b': 2 },
-    { 'c': 3 },
-    { 'd': 4 },
-    { 'e': 5 },
-    { 'f': 6 },
-    { 'g': 7 },
-    { 'h': 8 }
+    { 'a': 8 },
+    { 'b': 7 },
+    { 'c': 6 },
+    { 'd': 5 },
+    { 'e': 4 },
+    { 'f': 3 },
+    { 'g': 2 },
+    { 'h': 1 }
   ],
   oddEven: function() {
-    return (this % 2 ? 'odd' : 'even');
+    return (this % 2 ? 'even' : 'odd');
   }
 });
 
 Template.col.helpers({
   getValue: function() {
-    return this[Object.keys(this)[0]];
+    return Object.keys(this)[0];
   }
 });
 

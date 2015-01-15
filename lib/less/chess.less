@@ -13,10 +13,22 @@ ul, ol {
   clear: left;
 }
 
+.piece {
+  &.black {
+    &.rook {
+      width: 45px;
+      height: 45px;
+      z-index: 1;
+    }
+  }
+
+  &.white {
+  }
+}
+
+
 .board {
-
   .rows {
-
     .chars-container {
       margin-left: 32px;
     }
@@ -81,9 +93,6 @@ ul, ol {
   }
 
   .row {
-
-
-
     &.even {
       .col:nth-child(odd) {
         .square {

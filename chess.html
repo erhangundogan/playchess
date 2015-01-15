@@ -3,10 +3,7 @@
 </head>
 
 <body>
-  <h1>!</h1>
-
   {{>board}}
-
 </body>
 
 <template name="board">
@@ -54,8 +51,12 @@
 </template>
 
 <template name="col">
-  <li class="col" id="c{{..}}{{getValue}}">
-    <div class="square"></div>
+  <li class="col" id="{{getValue}}{{..}}">
+    <div class="square">
+      <svg viewBox="0 0 48 48" class="piece black rook">
+        <use xlink:href="/img/black/rook.svg"></use>
+      </svg>
+    </div>
   </li>
 </template>
 
