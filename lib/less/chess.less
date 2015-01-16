@@ -1,33 +1,53 @@
 
+@dark: #666;
+@light: #fff;
+@border: #000;
+
 * {
   box-sizing: border-box;
-}
-
-ul, ol {
-  list-style-type: none;
-  margin: 0;
-  padding: 0;
 }
 
 .clear-left {
   clear: left;
 }
 
+body {
+  background-color: #345344;
+}
+
 .piece {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+
   &.black {
-    &.rook {
-      width: 45px;
-      height: 45px;
-      z-index: 1;
-    }
+    &.king { background: transparent url('/image/pieces/black/king.svg') no-repeat center center; }
+    &.queen { background: transparent url('/image/pieces/black/queen.svg') no-repeat center center; }
+    &.bishop { background: transparent url('/image/pieces/black/bishop.svg') no-repeat center center; }
+    &.pawn { background: transparent url('/image/pieces/black/pawn.svg') no-repeat center center; }
+    &.knight { background: transparent url('/image/pieces/black/knight.svg') no-repeat center center; }
+    &.rook { background: transparent url('/image/pieces/black/rook.svg') no-repeat center center; }
   }
 
   &.white {
+    &.king { background: transparent url('/image/pieces/white/king.svg') no-repeat center center; }
+    &.queen { background: transparent url('/image/pieces/white/queen.svg') no-repeat center center; }
+    &.bishop { background: transparent url('/image/pieces/white/bishop.svg') no-repeat center center; }
+    &.pawn { background: transparent url('/image/pieces/white/pawn.svg') no-repeat center center; }
+    &.knight { background: transparent url('/image/pieces/white/knight.svg') no-repeat center center; }
+    &.rook { background: transparent url('/image/pieces/white/rook.svg') no-repeat center center; }
   }
 }
 
 
 .board {
+
+  ul, ol {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+  }
+
   .rows {
     .chars-container {
       margin-left: 32px;
@@ -40,23 +60,24 @@ ul, ol {
       text-align: center;
       float: left;
     }
+  }
 
-    &:first-child {
+  li.row:nth-child(3) {
+    .col {
+      .square {
+        border-top: solid 1px @border;
+      }
+    }
+  }
+
+  .rows {
+    li:nth-child(24) {
       .col {
         .square {
-          border-top: solid 1px black;
+          border-bottom: solid 1px @border;
         }
       }
     }
-
-    &:last-child {
-      .col {
-        .square {
-          border-bottom: solid 1px black;
-        }
-      }
-    }
-
   }
 
   .row-begin, .row-end {
@@ -81,13 +102,13 @@ ul, ol {
 
     &:last-child {
       .square {
-        border-right: solid 1px black;
+        border-right: solid 1px @border;
       }
     }
 
     &:first-child {
       .square {
-        border-left: solid 1px black;
+        border-left: solid 1px @border;
       }
     }
   }
@@ -96,7 +117,13 @@ ul, ol {
     &.even {
       .col:nth-child(odd) {
         .square {
-          background-color: black;
+          background-color: @dark;
+        }
+      }
+
+      .col:nth-child(even) {
+        .square {
+          background-color: @light;
         }
       }
     }
@@ -104,12 +131,17 @@ ul, ol {
     &.odd {
       .col:nth-child(even) {
         .square {
-          background-color: black;
+          background-color: @dark;
+        }
+      }
+
+      .col:nth-child(odd) {
+        .square {
+          background-color: @light;
         }
       }
     }
   }
-
 }
 
 
