@@ -11,7 +11,7 @@
     <ul class="rows">
 
       <li class="chars-container">
-        <ol>
+        <ol class="cols">
           {{#each charCols}}
             {{>charCol}}
           {{/each}}
@@ -23,7 +23,7 @@
       {{/each}}
 
       <li class="chars-container clear-left">
-        <ol>
+        <ol class="cols">
           {{#each charCols}}
             {{>charCol}}
           {{/each}}
@@ -39,7 +39,7 @@
     <div class="row-begin">{{this}}</div>
   </li>
   <li class="row {{oddEven}}" id="r{{this}}">
-    <ol>
+    <ol class="cols">
       {{#each cols}}
         {{>col}}
       {{/each}}
