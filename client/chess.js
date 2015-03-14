@@ -20,18 +20,56 @@ Template.col.helpers({
   }
 });
 
+Template.col.events({
+
+  // move over a piece
+  'mouseover .piece': function(event) {
+    $(event.target).addClass('over');
+  },
+
+  // move out a piece
+  'mouseout .piece': function(event) {
+    $(event.target).removeClass('over');
+  },
+
+  // select a piece
+  'click .piece:not(.selected)': function(event) {
+    // clear if there is a selected piece
+    $('.square.selected').removeClass('selected');
+
+    // add selected class
+    $(event.target).addClass('selected');
+
+    var rowIndex = parseInt($(event.target).attr('data-row') - 1);
+    var colIndex = parseInt($(event.target).attr('data-col-index'));
+    var piece = window.chess.board[rowIndex][colIndex];
+
+    window.chess.selectedPiece = piece;
+    piece.selected = true;
+    var moves = piece.possibleMoves();
+    debugger;
+  },
+
+  // deselect a piece
+  'click .piece.selected': function(event) {
+    $(event.target).removeClass('selected');
+  }
+
+
+});
+
+Template.charCol.helpers({
+  getKey: function() {
+    return this[0];
+  }
+});
+
 UI.registerHelper('checkSquare', function(row, col, options) {
   var rowIndex = parseInt(row) - 1;
   var colIndex = parseInt(col);
   var piece = window.chess.getPieceAt(rowIndex, colIndex);
   if (piece) {
     var color = piece.white ? 'white' : 'black';
-    return ' ' + color + ' ' + piece.typeName;
-  }
-});
-
-Template.charCol.helpers({
-  getKey: function() {
-    return this[0];
+    return ' piece ' + color + ' ' + piece.typeName;
   }
 });

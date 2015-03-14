@@ -1,5 +1,5 @@
 
-@dark: #444;
+@dark: #888;
 @light: #eee;
 @border: #000;
 
@@ -108,23 +108,22 @@ body {
       .square {
 
         &.white {
-          &.king { background: @dark url('/image/pieces/white/king.svg') no-repeat center center; }
-          &.queen { background: @dark url('/image/pieces/white/queen.svg') no-repeat center center; }
-          &.bishop { background: @dark url('/image/pieces/white/bishop.svg') no-repeat center center; }
-          &.pawn { background: @dark url('/image/pieces/white/pawn.svg') no-repeat center center; }
-          &.knight { background: @dark url('/image/pieces/white/knight.svg') no-repeat center center; }
-          &.rook { background: @dark url('/image/pieces/white/rook.svg') no-repeat center center; }
+          &.king { background: transparent url('/image/pieces/white/king.svg') no-repeat center center; }
+          &.queen { background: transparent url('/image/pieces/white/queen.svg') no-repeat center center; }
+          &.bishop { background: transparent url('/image/pieces/white/bishop.svg') no-repeat center center; }
+          &.pawn { background: transparent url('/image/pieces/white/pawn.svg') no-repeat center center; }
+          &.knight { background: transparent url('/image/pieces/white/knight.svg') no-repeat center center; }
+          &.rook { background: transparent url('/image/pieces/white/rook.svg') no-repeat center center; }
         }
 
         &.black {
-          &.king { background: @light url('/image/pieces/black/king.svg') no-repeat center center; }
-          &.queen { background: @light url('/image/pieces/black/queen.svg') no-repeat center center; }
-          &.bishop { background: @light url('/image/pieces/black/bishop.svg') no-repeat center center; }
-          &.pawn { background: @light url('/image/pieces/black/pawn.svg') no-repeat center center; }
-          &.knight { background: @light url('/image/pieces/black/knight.svg') no-repeat center center; }
-          &.rook { background: @light url('/image/pieces/black/rook.svg') no-repeat center center; }
+          &.king { background: transparent url('/image/pieces/black/king.svg') no-repeat center center; }
+          &.queen { background: transparent url('/image/pieces/black/queen.svg') no-repeat center center; }
+          &.bishop { background: transparent url('/image/pieces/black/bishop.svg') no-repeat center center; }
+          &.pawn { background: transparent url('/image/pieces/black/pawn.svg') no-repeat center center; }
+          &.knight { background: transparent url('/image/pieces/black/knight.svg') no-repeat center center; }
+          &.rook { background: transparent url('/image/pieces/black/rook.svg') no-repeat center center; }
         }
-
       }
     }
 
@@ -155,6 +154,26 @@ body {
         }
       }
     }
+
+    &.even, &.odd {
+      .col {
+        .square {
+
+          &.over {
+            background-color: #a2cbff;
+            cursor: pointer;
+          }
+
+          &.selected {
+            background-color: #4276ff;
+            cursor: pointer;
+          }
+
+        }
+      }
+    }
+
+
   }
 }
 

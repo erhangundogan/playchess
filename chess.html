@@ -52,10 +52,9 @@
 </template>
 
 <template name="col">
-  <li class="col" data-row="{{..}}" data-col-index="{{getColumnIndex}}" data-col="{{getColumnChar}}">
-    <div class="square {{checkSquare .. getColumnIndex}}">
-      <!--<div class="piece black rook"></div>-->
-    </div>
+  <li class="col">
+    <div data-row="{{..}}" data-col-index="{{getColumnIndex}}" data-col="{{getColumnChar}}"
+         class="square {{checkSquare .. getColumnIndex}}"></div>
   </li>
 </template>
 
