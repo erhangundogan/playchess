@@ -5,7 +5,7 @@
  * MIT License
  */
 
-(function() {
+(function(global) {
 
   'use strict';
 
@@ -14,10 +14,7 @@
   var pieces = ['pawn', 'knight', 'bishop', 'rook', 'queen', 'king'];
 
   var defaultWhitePieces = [0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 2, 4, 5, 2, 1, 3];
-  var defaultWhitePosition = new position(1, 0);
-
   var defaultBlackPieces = [3, 1, 2, 4, 5, 2, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0];
-  var defaultBlackPosition = new position(7, 0);
 
   // [row, col]: +/- analytic plane, row:y, col:x
   // minus means backwards, different direction for white and black
@@ -90,6 +87,9 @@
     return this;
   };
 
+  var defaultWhitePosition = new position(1, 0);
+  var defaultBlackPosition = new position(7, 0);
+
   /**
    * movement
    *
@@ -119,7 +119,9 @@
   var piece = function(type, white, position) {
     this.id = getUniqueId(24);
     this.type = type; // type of piece: ['pawn', 'knight', 'bishop', 'rook', 'queen', 'king']
+    this.typeName = pieces[type];
     this.white = !!white;
+    this.active = true; // active or passive piece
     this.position = position; // position of a piece
     return this;
   };
@@ -166,11 +168,10 @@
   var user = function(isWhite) {
     this.id = getUniqueId(24);
     this.info = null;
-    this.turn = false; // is it current user's turn to play?
+    this.turn = !!isWhite; // is it current user's turn to play? default white player
     this.lastMove = null; // last move of current user
     this.white = !!isWhite; // current user has white pieces or not
-    this.activePieces = []; // pieces active in game
-    this.passivePieces = []; // pieces passive in game
+    this.pieces = []; // pieces in game
     this.history = []; // array of moves
     return this;
   };
@@ -183,28 +184,63 @@
    */
   var game = function() {
     this.id = getUniqueId(24);
+
     this.white = new user(true);
+    this.white.pieces = this.init(true); // white pieces setup
+
     this.black = new user();
+    this.black.pieces = this.init(); // black pieces setup
+
     this.currentDuration = 0;
     this.totalDuration = 0;
+
     return this;
   };
-  game.prototype.init = function() {
-    _.each(defaultPieces, function(item, index) {
+  game.prototype.init = function(isWhite) {
+    var position = isWhite ? defaultWhitePosition : defaultBlackPosition;
+    var pieces = isWhite ? defaultWhitePieces : defaultBlackPieces;
 
+    return _.map(pieces, function(item, index) {
+      var newPiece = new piece(item, isWhite, _.clone(position));
+      position.col = ++position.col % 8; // max 8 columns
+
+      if (position.col === 0) {
+        position.row = isWhite ? 0 : 6; // setup second row of pieces
+      }
+      return newPiece;
     });
   };
+  game.prototype.getPieceAt = function(rowIndex, colIndex) {
+    var foundItem = null;
 
-  // reset chessboard
-  // reset flags
-  // reset pieces
-  // reset match
-  // create users
-  // place pieces
-  // arrange match
-  function setup() {
+    if (rowIndex >= 0 && colIndex >= 0) {
+      foundItem = _.find(this.white.pieces, function(whitePiece) {
+        if (whitePiece &&
+            whitePiece.position &&
+            whitePiece.position.row === rowIndex &&
+            whitePiece.position.col === colIndex) {
+          return whitePiece;
+        }
+      });
 
-  }
+      if (foundItem) {
+        return foundItem;
+      }
+
+      foundItem = _.find(this.black.pieces, function(blackPiece) {
+        if (blackPiece &&
+          blackPiece.position &&
+          blackPiece.position.row === rowIndex &&
+          blackPiece.position.col === colIndex) {
+          return blackPiece;
+        }
+      });
+
+      if (foundItem) {
+        return foundItem;
+      }
+    }
+  };
 
   /***
    * https://github.com/erhangundogan/jstools/blob/master/lib/jstools.js
@@ -228,4 +264,7 @@
     return buf.join("");
   }
 
-})();
+  global.chess = new game();
+  global.chess.init();
+
+})(window);

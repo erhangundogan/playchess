@@ -1,5 +1,6 @@
 <head>
   <title>chess</title>
+  <script src="js/logic.js"></script>
 </head>
 
 <body>
@@ -12,7 +13,7 @@
 
       <li class="chars-container">
         <ol class="cols">
-          {{#each charCols}}
+          {{#each chars}}
             {{>charCol}}
           {{/each}}
         </ol>
@@ -24,7 +25,7 @@
 
       <li class="chars-container clear-left">
         <ol class="cols">
-          {{#each charCols}}
+          {{#each chars}}
             {{>charCol}}
           {{/each}}
         </ol>
@@ -38,7 +39,7 @@
   <li>
     <div class="row-begin">{{this}}</div>
   </li>
-  <li class="row {{oddEven}}" id="r{{this}}">
+  <li class="row {{oddEven}}" data-row="{{this}}">
     <ol class="cols">
       {{#each cols}}
         {{>col}}
@@ -51,8 +52,8 @@
 </template>
 
 <template name="col">
-  <li class="col" id="{{getValue}}{{..}}">
-    <div class="square">
+  <li class="col" data-row="{{..}}" data-col-index="{{getColumnIndex}}" data-col="{{getColumnChar}}">
+    <div class="square {{checkSquare .. getColumnIndex}}">
       <!--<div class="piece black rook"></div>-->
     </div>
   </li>

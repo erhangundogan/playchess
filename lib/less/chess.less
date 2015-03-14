@@ -104,33 +104,40 @@ body {
   }
 
   .row {
+    .col {
+      .square {
 
-    &.even {
-      .col:nth-child(odd) {
-        .square {
-          background-color: @dark;
-
+        &.white {
           &.king { background: @dark url('/image/pieces/white/king.svg') no-repeat center center; }
           &.queen { background: @dark url('/image/pieces/white/queen.svg') no-repeat center center; }
           &.bishop { background: @dark url('/image/pieces/white/bishop.svg') no-repeat center center; }
           &.pawn { background: @dark url('/image/pieces/white/pawn.svg') no-repeat center center; }
           &.knight { background: @dark url('/image/pieces/white/knight.svg') no-repeat center center; }
           &.rook { background: @dark url('/image/pieces/white/rook.svg') no-repeat center center; }
-
-
         }
-      }
 
-      .col:nth-child(even) {
-        .square {
-          background-color: @light;
-
+        &.black {
           &.king { background: @light url('/image/pieces/black/king.svg') no-repeat center center; }
           &.queen { background: @light url('/image/pieces/black/queen.svg') no-repeat center center; }
           &.bishop { background: @light url('/image/pieces/black/bishop.svg') no-repeat center center; }
           &.pawn { background: @light url('/image/pieces/black/pawn.svg') no-repeat center center; }
           &.knight { background: @light url('/image/pieces/black/knight.svg') no-repeat center center; }
           &.rook { background: @light url('/image/pieces/black/rook.svg') no-repeat center center; }
+        }
+
+      }
+    }
+
+    &.even {
+      .col:nth-child(odd) {
+        .square {
+          background-color: @dark;
+        }
+      }
+
+      .col:nth-child(even) {
+        .square {
+          background-color: @light;
         }
       }
     }
@@ -139,26 +146,12 @@ body {
       .col:nth-child(even) {
         .square {
           background-color: @dark;
-
-          &.king { background: @dark url('/image/pieces/white/king.svg') no-repeat center center; }
-          &.queen { background: @dark url('/image/pieces/white/queen.svg') no-repeat center center; }
-          &.bishop { background: @dark url('/image/pieces/white/bishop.svg') no-repeat center center; }
-          &.pawn { background: @dark url('/image/pieces/white/pawn.svg') no-repeat center center; }
-          &.knight { background: @dark url('/image/pieces/white/knight.svg') no-repeat center center; }
-          &.rook { background: @dark url('/image/pieces/white/rook.svg') no-repeat center center; }
         }
       }
 
       .col:nth-child(odd) {
         .square {
           background-color: @light;
-
-          &.king { background: @light url('/image/pieces/black/king.svg') no-repeat center center; }
-          &.queen { background: @light url('/image/pieces/black/queen.svg') no-repeat center center; }
-          &.bishop { background: @light url('/image/pieces/black/bishop.svg') no-repeat center center; }
-          &.pawn { background: @light url('/image/pieces/black/pawn.svg') no-repeat center center; }
-          &.knight { background: @light url('/image/pieces/black/knight.svg') no-repeat center center; }
-          &.rook { background: @light url('/image/pieces/black/rook.svg') no-repeat center center; }
         }
       }
     }
