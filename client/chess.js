@@ -17,6 +17,15 @@ Template.col.helpers({
   getColumnChar: function() {
     var chars = [ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' ];
     return chars[this];
+  },
+  checkSquare: function(row, col) {
+    var rowIndex = parseInt(row) - 1;
+    var colIndex = parseInt(col);
+    var piece = window.chess.getPieceAt(rowIndex, colIndex);
+    if (piece) {
+      var color = piece.white ? 'white' : 'black';
+      return ' piece ' + color + ' ' + piece.typeName;
+    }
   }
 });
 
@@ -36,6 +45,7 @@ Template.col.events({
   'click .piece:not(.selected)': function(event) {
     // clear if there is a selected piece
     $('.square.selected').removeClass('selected');
+    $('.square.move').removeClass('move');
 
     // add selected class
     $(event.target).addClass('selected');
@@ -46,13 +56,21 @@ Template.col.events({
 
     window.chess.selectedPiece = piece;
     piece.selected = true;
-    var moves = piece.possibleMoves();
-    debugger;
+
+    var moves = piece.getMoves();
+
+    _.each(moves, function(item, index) {
+      var itemRow = item.row + 1;
+      var itemCol = item.col;
+      var foundItem = $('.square[data-row='+ itemRow +'][data-col-index='+ itemCol +']');
+      $(foundItem).addClass('move');
+    });
   },
 
   // deselect a piece
   'click .piece.selected': function(event) {
     $(event.target).removeClass('selected');
+    $('.square.move').removeClass('move');
   }
 
 
@@ -61,15 +79,5 @@ Template.col.events({
 Template.charCol.helpers({
   getKey: function() {
     return this[0];
-  }
-});
-
-UI.registerHelper('checkSquare', function(row, col, options) {
-  var rowIndex = parseInt(row) - 1;
-  var colIndex = parseInt(col);
-  var piece = window.chess.getPieceAt(rowIndex, colIndex);
-  if (piece) {
-    var color = piece.white ? 'white' : 'black';
-    return ' piece ' + color + ' ' + piece.typeName;
   }
 });

@@ -9,6 +9,7 @@
 
   'use strict';
 
+  var currentGame = null;
   var columns = ['a','b','c','d','e','f','g','h'];
   var rows    = [ 1,  2,  3,  4,  5,  6,  7,  8 ];
   var pieces  = ['pawn', 'knight', 'bishop', 'rook', 'queen', 'king'];
@@ -19,53 +20,50 @@
   // [row, col]: +/- analytic plane, row:y, col:x
   // minus means backwards, different direction for white and black
   var patterns = {
-    bishop: [
-      ['+p','+p'],
-      ['-p','-p'],
-      ['-p','+p'],
-      ['+p','-p']
-    ],
-    rook: [
-      [ '0','+p'],
-      ['-p', '0'],
-      [ '0','-p'],
-      ['+p', '0']
-    ],
-    queen: [
-      ['+p','+p'],
-      ['-p','-p'],
-      ['-p','+p'],
-      ['+p','-p'],
-      [ '0','+p'],
-      ['-p', '0'],
-      [ '0','-p'],
-      ['+p', '0']
-    ],
-    king: [
-      ['+1','+1'],
-      ['-1','-1'],
-      ['-1','+1'],
-      ['+1','-1'],
-      [ '0','+1'],
-      ['-1', '0'],
-      [ '0','-1'],
-      ['+1', '0']
-    ],
-    knight: [
-      ['+2','+1'],
-      ['+1','+2'],
-      ['-1','+2'],
-      ['-2','+1'],
-      ['-2','-1'],
-      ['-1','-2'],
-      ['+1','-2'],
-      ['+2','-1']
-    ],
-    pawn: [
-      ['+1', '0'],
-      ['+1','+1'],
-      ['+1','-1']
-    ]
+    bishop: function(currentPosition) {
+      var moves = [];
+      var pattern = [
+        ['+p', '+p'],
+        ['-p', '-p'],
+        ['-p', '+p'],
+        ['+p', '-p']
+      ];
+
+      function testMoves(currentPosition, amount, rowPositive, colPositive) {
+        var possibleMoves = [];
+        var newRow = rowPositive ? currentPosition.row + amount : currentPosition.row - amount;
+        var newCol = colPositive ? currentPosition.col + amount : currentPosition.col - amount;
+        var testMove = new position(newRow, newCol);
+
+        while(testMove.isValid()) {
+          possibleMoves.push(testMove);
+          amount++;
+          newRow = rowPositive ? currentPosition.row + amount : currentPosition.row - amount;
+          newCol = colPositive ? currentPosition.col + amount : currentPosition.col - amount;
+          testMove = new position(newRow, newCol);
+        }
+        return possibleMoves;
+      }
+
+      _.each(pattern, function (pItem, pIndex) {
+        var p = 1;
+        var newPosition = null;
+        if (pItem[0] === '+p') {
+          if (pItem[1] === '+p') {
+            testMoves(currentPosition, p, true, true);
+          } else if (pItem[1] === '-p') {
+            testMoves(currentPosition, p, true, false);
+          }
+        } else if (pItem[0] === '-p') {
+          if (pItem[1] === '+p') {
+            testMoves(currentPosition, p, false, true);
+          } else if (pItem[1] === '-p') {
+            testMoves(currentPosition, p, false, false);
+          }
+        }
+      });
+    }
+
   };
 
   /**
@@ -85,6 +83,9 @@
       return columns[this.col] + '' + this.row;
     };
     return this;
+  };
+  position.prototype.isValid = function() {
+    return this.row <= 7 && this.row >= 0 && this.col <= 7 && this.col >= 0;
   };
 
   var defaultWhitePosition = new position(1, 0);
@@ -123,25 +124,33 @@
     this.white = !!white;
     this.active = true; // active or passive piece
     this.selected = false; // selected at that moment
+    this.moved = false; // is this piece moved before
     this.position = position; // position of a piece
     return this;
   };
   piece.prototype.position = typeof position;
-  piece.prototype.applyMove = function() {
-    // we have this.position information
-    // we need to apply default movement logic for individual piece
-    return this.possibleMoves();
-  };
-  piece.prototype.possibleMoves = function() {
+  piece.prototype.getMoves = function() {
     // we have row, col and piece type
     // so we can extract possible movements according to pattterns
     // underscore library would be essential
     var self = this;
-    return _.map(patterns[this.type], function(pattern) {
-      var newPostion = new position(
-        self.position.row += pattern[0],
-        self.position.col += pattern[1]);
+    var moves = [];
+    _.each(patterns[self.typeName], function(pattern) {
+      //var existingPosition = _.clone(self.position);
+      var newPosition = new position(
+        self.position.row + parseInt(pattern[0]),
+        self.position.col + parseInt(pattern[1]));
+
+      if (newPosition.isValid()) {
+        var pieceAtMovement = currentGame.getPieceAt(newPosition.row, newPosition.col);
+
+        if (!pieceAtMovement || (pieceAtMovement && pieceAtMovement.white !== self.white)) {
+          moves.push(newPosition);
+        }
+      }
     });
+
+    return moves;
   };
 
   /**
@@ -288,6 +297,57 @@
     return buf.join("");
   }
 
-  global.chess = new game();
+  currentGame = new game();
+  global.chess = currentGame;
 
 })(window);
+
+/*
+ bishop1: [
+ ['+p','+p'],
+ ['-p','-p'],
+ ['-p','+p'],
+ ['+p','-p']
+ ],
+ rook: [
+ [ '0','+p'],
+ ['-p', '0'],
+ [ '0','-p'],
+ ['+p', '0']
+ ],
+ queen: [
+ ['+p','+p'],
+ ['-p','-p'],
+ ['-p','+p'],
+ ['+p','-p'],
+ [ '0','+p'],
+ ['-p', '0'],
+ [ '0','-p'],
+ ['+p', '0']
+ ],
+ king: [
+ ['+1','+1'],
+ ['-1','-1'],
+ ['-1','+1'],
+ ['+1','-1'],
+ [ '0','+1'],
+ ['-1', '0'],
+ [ '0','-1'],
+ ['+1', '0']
+ ],
+ knight: [
+ ['+2','+1'],
+ ['+1','+2'],
+ ['-1','+2'],
+ ['-2','+1'],
+ ['-2','-1'],
+ ['-1','-2'],
+ ['+1','-2'],
+ ['+2','-1']
+ ],
+ pawn: [
+ ['+1', '0'],
+ ['+1','+1'],
+ ['+1','-1']
+ ]
+ */
