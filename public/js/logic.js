@@ -62,7 +62,7 @@
       ['+1', '-2'],
       ['+2', '-1']
     ],
-    // pawn has special moves, so we need function to handle it
+    // pawn has special moves, so we need a function to handle it
     pawn: function (isWhite, isFirstMove, currentPosition) {
 
       // standard movement
@@ -89,7 +89,7 @@
         ]
       };
 
-      // capture double square movement of opponent's pawn
+      // en passant
       var enPassantPattern = {
         white: [
           ['0', '+1'],
@@ -129,11 +129,17 @@
       }
 
       // en passant capture
+      var lastMove = isWhite ? currentGame.black.getLastMove() : currentGame.white.getLastMove();
+
       var enPassantRightPiece = currentGame.getPieceAt(
         currentPosition.row + parseInt(selectedEnPassantPattern[0][0]),
         currentPosition.col + parseInt(selectedEnPassantPattern[0][1]));
 
-      if (enPassantRightPiece && enPassantRightPiece.is('pawn') && enPassantRightPiece.isFirstMovement()) {
+      if (enPassantRightPiece &&
+        isWhite !== enPassantRightPiece.white &&
+        enPassantRightPiece.is('pawn') &&
+        enPassantRightPiece.isFirstMovement() &&
+        enPassantRightPiece.id === lastMove.pieceId) {
         // this is double opening of opponent's pawn on the left side
         selectedMovementPattern.push(selectedCapturePattern[0]);
       }
@@ -142,7 +148,11 @@
         currentPosition.row + parseInt(selectedEnPassantPattern[1][0]),
         currentPosition.col + parseInt(selectedEnPassantPattern[1][1]));
 
-      if (enPassantLeftPiece && enPassantLeftPiece.is('pawn') && enPassantLeftPiece.isFirstMovement()) {
+      if (enPassantLeftPiece &&
+        isWhite !== enPassantLeftPiece.white &&
+        enPassantLeftPiece.is('pawn') &&
+        enPassantLeftPiece.isFirstMovement() &&
+        enPassantLeftPiece.id === lastMove.pieceId) {
         // this is double opening of opponent's pawn on the right side
         selectedMovementPattern.push(selectedCapturePattern[1]);
       }
@@ -188,10 +198,13 @@
     this.id = getUniqueId(24);
     this.before = before; // row, col position before movement
     this.after = after; // row, col position after movement
-
-    this.pawnDoubleSquare = false; // pawn advance two squares
+    this.pieceId = null; // type of piece from pieces collection
+    this.check = false; // is it check?
+    this.checkmate = false; // is it checkmate?
+    this.duration = 0; // movement duration
+    this.pawnDoubleSquareMove = false; // pawn advance two squares
     this.pawnPromotion = false; // pawn reached latest row and it will be promoted
-    this.castling = false; // rook + king special move
+    this.castling = false; // rook + king special movement
 
     // text representation of movement
     this.text = function () {
@@ -221,12 +234,100 @@
 
   piece.prototype.position = typeof position;
 
-  piece.prototype.is = function(pieceType) {
+  piece.prototype.is = function (pieceType) {
     return this.typeName === pieceType; // this.piece.is('pawn') ?
   };
 
-  piece.prototype.isFirstMovement = function() {
+  piece.prototype.isFirstMovement = function () {
     return this.moves.length === 1;
+  };
+
+  /***
+   * whenever piece moved to another position:
+   *
+   * remove selected piece from board position
+   * remove opponent's piece if it is captured
+   * change captured piece to passive
+   * add selected piece to clicked square in board array
+   * change position of selected piece (ok)
+   * add movement to piece's moves array
+   * add movement to user's history
+   * remove selected flag
+   * change turn
+   * reset timer
+   * clear selected, move classes
+   *
+   * @param newRow
+   * @param newCol
+   */
+  piece.prototype.moveTo = function (newRow, newCol) {
+    var oldPosition = this.position;
+    var newPosition = new position(newRow, newCol);
+
+    // remove piece if it is captured
+    var capturedPiece = currentGame.getPieceAt(newRow, newCol);
+    if (capturedPiece) {
+      capturedPiece.capture();
+    }
+
+    // calculate elapsed time and replace timer with new one
+    var currentTime = (new Date()).getTime();
+    var timeDiff = currentTime - currentGame.timer;
+    currentGame.timer = currentTime;
+
+    // is this movement pawn's first two square advance?
+    var pawnDoubleSquareMove = this.is('pawn') && Math.abs(oldPosition.row - newRow) === 2;
+
+    // is this movement pawn promotion?
+    var pawnPromotion = this.is('pawn') && ((this.white && newRow === 7) || (!this.white && newRow === 0));
+
+    // create movement record
+    var currentMovement = new movement(oldPosition, newPosition);
+    currentMovement.pawnDoubleSquareMove = pawnDoubleSquareMove;
+    currentMovement.pawnPromotion = pawnPromotion;
+    currentMovement.pieceId = this.id;
+
+    // add new position to piece
+    this.position = newPosition;
+
+    // add movement to piece's movements list
+    this.moves.push(currentMovement);
+
+    // change position of piece on board
+    currentGame.board[oldPosition.row][oldPosition.col] = null;
+    currentGame.board[newRow][newCol] = this;
+    currentGame.selectedPiece = null;
+
+    // change turn to another player
+    if (currentGame.turn === 'white') {
+      currentGame.turn = 'black';
+      currentGame.white.history.push(currentMovement);
+      currentGame.white.elapsedTime.push(timeDiff);
+    } else {
+      currentGame.turn = 'white';
+      currentGame.black.history.push(currentMovement);
+      currentGame.black.elapsedTime.push(timeDiff);
+    }
+
+  };
+
+  piece.prototype.capture = function () {
+    var self = this;
+    self.active = false;
+
+    currentGame.board[self.position.row][self.position.col] = null;
+
+    if (this.white) {
+      currentGame.white.piecesOut.push(self);
+      currentGame.white.pieces = _.reject(currentGame.white.pieces, function (item) {
+        return self.id === item.id;
+      });
+    } else {
+      currentGame.black.piecesOut.push(self);
+      currentGame.black.pieces = _.reject(currentGame.black.pieces, function (item) {
+        return self.id === item.id;
+      });
+    }
   };
 
   piece.prototype.getMoves = function () {
@@ -235,30 +336,51 @@
     // underscore library would be essential
     var self = this;
     var moves = [];
+    var isCaptured = false;
     var pattern = patterns[self.typeName];
     var currentPosition = this.position;
 
     function testMove(piecePosition, rowAmount, colAmount) {
-      var newRow = piecePosition.row + parseInt(rowAmount);
-      var newCol = piecePosition.col + parseInt(colAmount);
+      var rowDiff = parseInt(rowAmount);
+      var colDiff = parseInt(colAmount);
+      var newRow = piecePosition.row + rowDiff;
+      var newCol = piecePosition.col + colDiff;
       var testMove = new position(newRow, newCol);
 
       if (testMove.isValid()) {
         var pieceAtMovement = currentGame.getPieceAt(newRow, newCol);
-        if (!pieceAtMovement || (pieceAtMovement && pieceAtMovement.white !== self.white)) {
-          return testMove;
+        if (!pieceAtMovement) {
+          return {
+            item: testMove,
+            isCaptured: false
+          };
+        } else if (pieceAtMovement && pieceAtMovement.white !== self.white && !self.is('pawn')) {
+          return {
+            item: testMove,
+            isCaptured: true
+          };
+        } else {
+          if (self.is('pawn')) {
+            if (pieceAtMovement && Math.abs(rowDiff) === 1 && Math.abs(colDiff) === 1) {
+              return {
+                item: testMove,
+                isCaptured: true
+              };
+            }
+          }
         }
       }
     }
 
     if (typeof pattern === 'function') {
-      pattern = pattern(self.white, !self.moved, currentPosition);
+      pattern = pattern(self.white, self.moves.length === 0, currentPosition);
     }
 
     _.each(pattern, function (pItem, pIndex) {
 
       var p = 1;
       var newPosition = true;
+      var isCaptured = false;
 
       // if pattern first array item includes +p/-p then this piece will go
       // through positive/negative y coordinate until it is blocked
@@ -271,8 +393,11 @@
           // test and add movement until it blocked
           while (newPosition) {
             newPosition = testMove(currentPosition, p, p);
-            if (newPosition) {
-              moves.push(newPosition);
+            if (newPosition && newPosition.item) {
+              moves.push(newPosition.item);
+              if (newPosition.isCaptured) {
+                break;
+              }
               p++;
             } else {
               break;
@@ -283,8 +408,11 @@
 
           while (newPosition) {
             newPosition = testMove(currentPosition, p, -p);
-            if (newPosition) {
-              moves.push(newPosition);
+            if (newPosition && newPosition.item) {
+              moves.push(newPosition.item);
+              if (newPosition.isCaptured) {
+                break;
+              }
               p++;
             } else {
               break;
@@ -295,8 +423,11 @@
 
           while (newPosition) {
             newPosition = testMove(currentPosition, p, pItem[1]);
-            if (newPosition) {
-              moves.push(newPosition);
+            if (newPosition && newPosition.item) {
+              moves.push(newPosition.item);
+              if (newPosition.isCaptured) {
+                break;
+              }
               p++;
             } else {
               break;
@@ -310,8 +441,11 @@
 
           while (newPosition) {
             newPosition = testMove(currentPosition, -p, p);
-            if (newPosition) {
-              moves.push(newPosition);
+            if (newPosition && newPosition.item) {
+              moves.push(newPosition.item);
+              if (newPosition.isCaptured) {
+                break;
+              }
               p++;
             } else {
               break;
@@ -322,8 +456,11 @@
 
           while (newPosition) {
             newPosition = testMove(currentPosition, -p, -p);
-            if (newPosition) {
-              moves.push(newPosition);
+            if (newPosition && newPosition.item) {
+              moves.push(newPosition.item);
+              if (newPosition.isCaptured) {
+                break;
+              }
               p++;
             } else {
               break;
@@ -334,8 +471,11 @@
 
           while (newPosition) {
             newPosition = testMove(currentPosition, -p, pItem[1]);
-            if (newPosition) {
-              moves.push(newPosition);
+            if (newPosition && newPosition.item) {
+              moves.push(newPosition.item);
+              if (newPosition.isCaptured) {
+                break;
+              }
               p++;
             } else {
               break;
@@ -349,8 +489,11 @@
 
           while (newPosition) {
             newPosition = testMove(currentPosition, pItem[0], p);
-            if (newPosition) {
-              moves.push(newPosition);
+            if (newPosition && newPosition.item) {
+              moves.push(newPosition.item);
+              if (newPosition.isCaptured) {
+                break;
+              }
               p++;
             } else {
               break;
@@ -361,8 +504,11 @@
 
           while (newPosition) {
             newPosition = testMove(currentPosition, pItem[0], -p);
-            if (newPosition) {
-              moves.push(newPosition);
+            if (newPosition && newPosition.item) {
+              moves.push(newPosition.item);
+              if (newPosition.isCaptured) {
+                break;
+              }
               p++;
             } else {
               break;
@@ -373,8 +519,8 @@
 
           // there is not pattern, just a single movement
           newPosition = testMove(currentPosition, pItem[0], pItem[1]);
-          if (newPosition) {
-            moves.push(newPosition);
+          if (newPosition && newPosition.item) {
+            moves.push(newPosition.item);
           }
         }
       }
@@ -385,23 +531,6 @@
   };
 
   /**
-   * move
-   *
-   * @returns {move}
-   */
-  var move = function () {
-    this.id = getUniqueId(24);
-    this.piece = null; // type of piece from pieces collection
-    this.movement = null; // movement positions before and after
-    this.check = false; // is it check?
-    this.checkmate = false; // is it checkmate?
-    this.duration = 0; // movement duration
-    return this;
-  };
-  move.prototype.piece = typeof piece;
-  move.prototype.movement = typeof movement;
-
-  /**
    * user
    *
    * @returns {user}
@@ -409,8 +538,7 @@
   var user = function (isWhite) {
     this.id = getUniqueId(24);
     this.info = null;
-    this.turn = !!isWhite; // is it current user's turn to play? default white player
-    this.lastMove = null; // last move of current user
+    this.elapsedTime = [];
     this.white = !!isWhite; // current user has white pieces or not
     this.pieces = []; // pieces in the game
     this.piecesOut = []; // pieces out of the game
@@ -418,7 +546,14 @@
     this.castling = [true, true]; // left and right rook castling allowance
     return this;
   };
-  user.prototype.lastMove = typeof move;
+
+  user.prototype.getLastMove = function () {
+    if (this.history.length > 0) {
+      var last = this.history.length - 1;
+      return this.history[last];
+    }
+    return null;
+  };
 
   /**
    * game
@@ -439,8 +574,9 @@
     this.black = new user();
     this.black.pieces = this.init(); // black pieces setup
 
-    this.currentDuration = 0;
-    this.totalDuration = 0;
+    this.timer = (new Date()).getTime();
+
+    this.turn = 'white'; // which user's turn
 
     this.selectedPiece = null;
 
@@ -464,6 +600,13 @@
 
       // assign piece to that square
       self.board[newPosition.row][newPosition.col] = newPiece;
+
+      // add piece to user's pieces
+      if (isWhite) {
+        self.white.pieces.push(newPiece);
+      } else {
+        self.black.pieces.push(newPiece);
+      }
 
       // max 8 columns
       position.col = ++position.col % 8;
@@ -489,6 +632,7 @@
       var pieces = isWhite ? self.white.pieces : self.black.pieces;
       return _.find(pieces, function (pieceItem) {
         return pieceItem &&
+          pieceItem.active &&
           pieceItem.position &&
           pieceItem.position.row === rowIndex &&
           pieceItem.position.col === colIndex;
@@ -532,5 +676,6 @@
 
   currentGame = new game();
   global.chess = currentGame;
+  global.Session.set('chess', currentGame);
 
 })(window);

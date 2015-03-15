@@ -21,7 +21,9 @@ Template.col.helpers({
   checkSquare: function(row, col) {
     var rowIndex = parseInt(row) - 1;
     var colIndex = parseInt(col);
+    var chess = Session.get('chess');
     var piece = window.chess.getPieceAt(rowIndex, colIndex);
+
     if (piece) {
       var color = piece.white ? 'white' : 'black';
       return ' piece ' + color + ' ' + piece.typeName;
@@ -33,7 +35,9 @@ Template.col.events({
 
   // move over a piece
   'mouseover .piece': function(event) {
-    $(event.target).addClass('over');
+    if ($(event.target).hasClass(window.chess.turn)) {
+      $(event.target).addClass('over');
+    }
   },
 
   // move out a piece
@@ -43,6 +47,8 @@ Template.col.events({
 
   // select a piece
   'click .piece:not(.selected)': function(event) {
+    if (!$(event.target).hasClass(window.chess.turn)) return;
+
     // clear if there is a selected piece
     $('.square.selected').removeClass('selected');
 
@@ -88,9 +94,24 @@ Template.col.events({
       window.chess.selectedPiece.selected = false;
       window.chess.selectedPiece = null;
     }
+  },
+
+  'click .square.move': function(event) {
+    var newRow = parseInt($(event.target).attr('data-row') - 1);
+    var newCol = parseInt($(event.target).attr('data-col-index'));
+    var currentPiece = window.chess.selectedPiece;
+
+    if (!(currentPiece && currentPiece.position)) {
+      return;
+    }
+
+    currentPiece.moveTo(newRow, newCol);
+
+    $('.square.selected').removeClass('selected');
+    $('.square.move').removeClass('move');
+
+    Session.set('chess', window.chess);
   }
-
-
 });
 
 Template.charCol.helpers({
