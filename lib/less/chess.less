@@ -168,17 +168,29 @@ body {
             background-color: #4276ff;
             cursor: pointer;
           }
-
-          &.move {
-            background-color: #ffa0a2;
-            cursor: pointer;
-          }
-
         }
       }
     }
 
+    &.even, &.odd {
+      .col:nth-child(odd) {
+        .square {
+          &.move {
+            background-color: #ff7f74;
+            cursor: pointer;
+          }
+        }
+      }
 
+      .col:nth-child(even) {
+        .square {
+          &.move {
+            background-color: #ffbabe;
+            cursor: pointer;
+          }
+        }
+      }
+    }
   }
 }
 

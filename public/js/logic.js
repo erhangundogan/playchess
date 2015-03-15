@@ -5,14 +5,14 @@
  * MIT License
  */
 
-(function(global) {
+(function (global) {
 
   'use strict';
 
   var currentGame = null;
-  var columns = ['a','b','c','d','e','f','g','h'];
-  var rows    = [ 1,  2,  3,  4,  5,  6,  7,  8 ];
-  var pieces  = ['pawn', 'knight', 'bishop', 'rook', 'queen', 'king'];
+  var columns = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+  var rows = [1, 2, 3, 4, 5, 6, 7, 8];
+  var pieces = ['pawn', 'knight', 'bishop', 'rook', 'queen', 'king'];
 
   var defaultWhitePieces = [0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 2, 4, 5, 2, 1, 3];
   var defaultBlackPieces = [3, 1, 2, 4, 5, 2, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -20,50 +20,53 @@
   // [row, col]: +/- analytic plane, row:y, col:x
   // minus means backwards, different direction for white and black
   var patterns = {
-    bishop: function(currentPosition) {
-      var moves = [];
-      var pattern = [
-        ['+p', '+p'],
-        ['-p', '-p'],
-        ['-p', '+p'],
-        ['+p', '-p']
-      ];
-
-      function testMoves(currentPosition, amount, rowPositive, colPositive) {
-        var possibleMoves = [];
-        var newRow = rowPositive ? currentPosition.row + amount : currentPosition.row - amount;
-        var newCol = colPositive ? currentPosition.col + amount : currentPosition.col - amount;
-        var testMove = new position(newRow, newCol);
-
-        while(testMove.isValid()) {
-          possibleMoves.push(testMove);
-          amount++;
-          newRow = rowPositive ? currentPosition.row + amount : currentPosition.row - amount;
-          newCol = colPositive ? currentPosition.col + amount : currentPosition.col - amount;
-          testMove = new position(newRow, newCol);
-        }
-        return possibleMoves;
-      }
-
-      _.each(pattern, function (pItem, pIndex) {
-        var p = 1;
-        var newPosition = null;
-        if (pItem[0] === '+p') {
-          if (pItem[1] === '+p') {
-            testMoves(currentPosition, p, true, true);
-          } else if (pItem[1] === '-p') {
-            testMoves(currentPosition, p, true, false);
-          }
-        } else if (pItem[0] === '-p') {
-          if (pItem[1] === '+p') {
-            testMoves(currentPosition, p, false, true);
-          } else if (pItem[1] === '-p') {
-            testMoves(currentPosition, p, false, false);
-          }
-        }
-      });
-    }
-
+    bishop: [
+      ['+p', '+p'],
+      ['-p', '-p'],
+      ['-p', '+p'],
+      ['+p', '-p']
+    ],
+    rook: [
+      [ '0','+p'],
+      ['-p', '0'],
+      [ '0','-p'],
+      ['+p', '0']
+    ],
+    queen: [
+      ['+p','+p'],
+      ['-p','-p'],
+      ['-p','+p'],
+      ['+p','-p'],
+      [ '0','+p'],
+      ['-p', '0'],
+      [ '0','-p'],
+      ['+p', '0']
+    ],
+    king: [
+      ['+1','+1'],
+      ['-1','-1'],
+      ['-1','+1'],
+      ['+1','-1'],
+      [ '0','+1'],
+      ['-1', '0'],
+      [ '0','-1'],
+      ['+1', '0']
+    ],
+    knight: [
+      ['+2','+1'],
+      ['+1','+2'],
+      ['-1','+2'],
+      ['-2','+1'],
+      ['-2','-1'],
+      ['-1','-2'],
+      ['+1','-2'],
+      ['+2','-1']
+    ],
+    pawn: [
+      ['+1', '0'],
+      ['+1','+1'],
+      ['+1','-1']
+    ]
   };
 
   /**
@@ -73,18 +76,18 @@
    * @param col
    * @returns {position}
    */
-  var position = function(row, col) {
+  var position = function (row, col) {
     this.id = getUniqueId(24);
     this.row = row; // row in number
     this.col = col; // col in number
 
     // text representation of position
-    this.text = function() {
+    this.text = function () {
       return columns[this.col] + '' + this.row;
     };
     return this;
   };
-  position.prototype.isValid = function() {
+  position.prototype.isValid = function () {
     return this.row <= 7 && this.row >= 0 && this.col <= 7 && this.col >= 0;
   };
 
@@ -98,13 +101,13 @@
    * @param after
    * @returns {movement}
    */
-  var movement = function(before, after) {
+  var movement = function (before, after) {
     this.id = getUniqueId(24);
     this.before = before; // row, col position before movement
     this.after = after; // row, col position after movement
 
     // text representation of movement
-    this.text = function() {
+    this.text = function () {
       return this.before.text() + ' - ' + this.after.text();
     };
     return this;
@@ -117,7 +120,7 @@
    *
    * @returns {piece}
    */
-  var piece = function(type, white, position) {
+  var piece = function (type, white, position) {
     this.id = getUniqueId(24);
     this.type = type; // type of piece: ['pawn', 'knight', 'bishop', 'rook', 'queen', 'king']
     this.typeName = pieces[type];
@@ -129,25 +132,152 @@
     return this;
   };
   piece.prototype.position = typeof position;
-  piece.prototype.getMoves = function() {
+  piece.prototype.getMoves = function () {
     // we have row, col and piece type
     // so we can extract possible movements according to pattterns
     // underscore library would be essential
     var self = this;
     var moves = [];
-    _.each(patterns[self.typeName], function(pattern) {
-      //var existingPosition = _.clone(self.position);
-      var newPosition = new position(
-        self.position.row + parseInt(pattern[0]),
-        self.position.col + parseInt(pattern[1]));
+    var pattern = patterns[self.typeName];
+    var currentPosition = this.position;
 
-      if (newPosition.isValid()) {
-        var pieceAtMovement = currentGame.getPieceAt(newPosition.row, newPosition.col);
+    function testMove(piecePosition, rowAmount, colAmount) {
+      var newRow = piecePosition.row + parseInt(rowAmount);
+      var newCol = piecePosition.col + parseInt(colAmount);
+      var testMove = new position(newRow, newCol);
 
+      if (testMove.isValid()) {
+        var pieceAtMovement = currentGame.getPieceAt(newRow, newCol);
         if (!pieceAtMovement || (pieceAtMovement && pieceAtMovement.white !== self.white)) {
-          moves.push(newPosition);
+          return testMove;
         }
       }
+    }
+
+    _.each(pattern, function (pItem, pIndex) {
+
+      var p = 1;
+      var newPosition = true;
+
+      // if pattern first array item includes +p/-p then this piece will go
+      // through positive/negative y coordinate until it is blocked
+      if (pItem[0] === '+p') {
+
+        // if pattern second array item includes +p/-p then this piece will go
+        // through positive/negative x coordinate until it is blocked
+        if (pItem[1] === '+p') {
+
+          // test and add movement until it blocked
+          while (newPosition) {
+            newPosition = testMove(currentPosition, p, p);
+            if (newPosition) {
+              moves.push(newPosition);
+              p++;
+            } else {
+              break;
+            }
+          }
+
+        } else if (pItem[1] === '-p') {
+
+          while (newPosition) {
+            newPosition = testMove(currentPosition, p, -p);
+            if (newPosition) {
+              moves.push(newPosition);
+              p++;
+            } else {
+              break;
+            }
+          }
+
+        } else {
+
+          while (newPosition) {
+            newPosition = testMove(currentPosition, p, pItem[1]);
+            if (newPosition) {
+              moves.push(newPosition);
+              p++;
+            } else {
+              break;
+            }
+          }
+        }
+
+      } else if (pItem[0] === '-p') {
+
+        if (pItem[1] === '+p') {
+
+          while (newPosition) {
+            newPosition = testMove(currentPosition, -p, p);
+            if (newPosition) {
+              moves.push(newPosition);
+              p++;
+            } else {
+              break;
+            }
+          }
+
+        } else if (pItem[1] === '-p') {
+
+          while (newPosition) {
+            newPosition = testMove(currentPosition, -p, -p);
+            if (newPosition) {
+              moves.push(newPosition);
+              p++;
+            } else {
+              break;
+            }
+          }
+
+        } else {
+
+          while (newPosition) {
+            newPosition = testMove(currentPosition, -p, pItem[1]);
+            if (newPosition) {
+              moves.push(newPosition);
+              p++;
+            } else {
+              break;
+            }
+          }
+        }
+
+      } else {
+
+        if (pItem[1] === '+p') {
+
+          while (newPosition) {
+            newPosition = testMove(currentPosition, pItem[0], p);
+            if (newPosition) {
+              moves.push(newPosition);
+              p++;
+            } else {
+              break;
+            }
+          }
+
+        } else if (pItem[1] === '-p') {
+
+          while (newPosition) {
+            newPosition = testMove(currentPosition, pItem[0], -p);
+            if (newPosition) {
+              moves.push(newPosition);
+              p++;
+            } else {
+              break;
+            }
+          }
+
+        } else {
+
+          // there is not pattern, just a single movement
+          newPosition = testMove(currentPosition, pItem[0], pItem[1]);
+          if (newPosition) {
+            moves.push(newPosition);
+          }
+        }
+      }
+
     });
 
     return moves;
@@ -158,7 +288,7 @@
    *
    * @returns {move}
    */
-  var move = function() {
+  var move = function () {
     this.id = getUniqueId(24);
     this.piece = null; // type of piece from pieces collection
     this.movement = null; // movement positions before and after
@@ -175,7 +305,7 @@
    *
    * @returns {user}
    */
-  var user = function(isWhite) {
+  var user = function (isWhite) {
     this.id = getUniqueId(24);
     this.info = null;
     this.turn = !!isWhite; // is it current user's turn to play? default white player
@@ -192,7 +322,7 @@
    *
    * @returns {game}
    */
-  var game = function() {
+  var game = function () {
     this.id = getUniqueId(24);
     this.board = [];
 
@@ -220,12 +350,12 @@
    * @param isWhite
    * @returns {Array}
    */
-  game.prototype.init = function(isWhite) {
+  game.prototype.init = function (isWhite) {
     var position = isWhite ? defaultWhitePosition : defaultBlackPosition;
     var pieces = isWhite ? defaultWhitePieces : defaultBlackPieces;
     var self = this;
 
-    return _.map(pieces, function(item, index) {
+    return _.map(pieces, function (item, index) {
       var newPosition = _.clone(position);
       var newPiece = new piece(item, isWhite, newPosition);
 
@@ -248,13 +378,13 @@
    * @param colIndex : begins from 0
    * @returns {piece}
    */
-  game.prototype.getPieceAt = function(rowIndex, colIndex) {
+  game.prototype.getPieceAt = function (rowIndex, colIndex) {
     var foundItem = null;
     var self = this;
 
     function findPiece(isWhite) {
       var pieces = isWhite ? self.white.pieces : self.black.pieces;
-      return _.find(pieces, function(pieceItem) {
+      return _.find(pieces, function (pieceItem) {
         return pieceItem &&
           pieceItem.position &&
           pieceItem.position.row === rowIndex &&
@@ -301,53 +431,3 @@
   global.chess = currentGame;
 
 })(window);
-
-/*
- bishop1: [
- ['+p','+p'],
- ['-p','-p'],
- ['-p','+p'],
- ['+p','-p']
- ],
- rook: [
- [ '0','+p'],
- ['-p', '0'],
- [ '0','-p'],
- ['+p', '0']
- ],
- queen: [
- ['+p','+p'],
- ['-p','-p'],
- ['-p','+p'],
- ['+p','-p'],
- [ '0','+p'],
- ['-p', '0'],
- [ '0','-p'],
- ['+p', '0']
- ],
- king: [
- ['+1','+1'],
- ['-1','-1'],
- ['-1','+1'],
- ['+1','-1'],
- [ '0','+1'],
- ['-1', '0'],
- [ '0','-1'],
- ['+1', '0']
- ],
- knight: [
- ['+2','+1'],
- ['+1','+2'],
- ['-1','+2'],
- ['-2','+1'],
- ['-2','-1'],
- ['-1','-2'],
- ['+1','-2'],
- ['+2','-1']
- ],
- pawn: [
- ['+1', '0'],
- ['+1','+1'],
- ['+1','-1']
- ]
- */
