@@ -45,6 +45,14 @@ Template.col.events({
   'click .piece:not(.selected)': function(event) {
     // clear if there is a selected piece
     $('.square.selected').removeClass('selected');
+
+    // remove selected flag
+    if (window.chess.selectedPiece) {
+      window.chess.selectedPiece.selected = false;
+      window.chess.selectedPiece = null;
+    }
+
+    // remove possible movement squares of previous selected piece
     $('.square.move').removeClass('move');
 
     // add selected class
@@ -54,11 +62,14 @@ Template.col.events({
     var colIndex = parseInt($(event.target).attr('data-col-index'));
     var piece = window.chess.board[rowIndex][colIndex];
 
+    // set selected flag of piece
     window.chess.selectedPiece = piece;
-    piece.selected = true;
+    window.chess.selectedPiece.selected = true;
 
+    // get possible movements
     var moves = piece.getMoves();
 
+    // add move class to possible movement squares
     _.each(moves, function(item, index) {
       var itemRow = item.row + 1;
       var itemCol = item.col;
@@ -71,6 +82,12 @@ Template.col.events({
   'click .piece.selected': function(event) {
     $(event.target).removeClass('selected');
     $('.square.move').removeClass('move');
+
+    // remove selected flag
+    if (window.chess.selectedPiece) {
+      window.chess.selectedPiece.selected = false;
+      window.chess.selectedPiece = null;
+    }
   }
 
 

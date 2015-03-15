@@ -27,46 +27,129 @@
       ['+p', '-p']
     ],
     rook: [
-      [ '0','+p'],
+      ['0', '+p'],
       ['-p', '0'],
-      [ '0','-p'],
+      ['0', '-p'],
       ['+p', '0']
     ],
     queen: [
-      ['+p','+p'],
-      ['-p','-p'],
-      ['-p','+p'],
-      ['+p','-p'],
-      [ '0','+p'],
+      ['+p', '+p'],
+      ['-p', '-p'],
+      ['-p', '+p'],
+      ['+p', '-p'],
+      ['0', '+p'],
       ['-p', '0'],
-      [ '0','-p'],
+      ['0', '-p'],
       ['+p', '0']
     ],
     king: [
-      ['+1','+1'],
-      ['-1','-1'],
-      ['-1','+1'],
-      ['+1','-1'],
-      [ '0','+1'],
+      ['+1', '+1'],
+      ['-1', '-1'],
+      ['-1', '+1'],
+      ['+1', '-1'],
+      ['0', '+1'],
       ['-1', '0'],
-      [ '0','-1'],
+      ['0', '-1'],
       ['+1', '0']
     ],
     knight: [
-      ['+2','+1'],
-      ['+1','+2'],
-      ['-1','+2'],
-      ['-2','+1'],
-      ['-2','-1'],
-      ['-1','-2'],
-      ['+1','-2'],
-      ['+2','-1']
+      ['+2', '+1'],
+      ['+1', '+2'],
+      ['-1', '+2'],
+      ['-2', '+1'],
+      ['-2', '-1'],
+      ['-1', '-2'],
+      ['+1', '-2'],
+      ['+2', '-1']
     ],
-    pawn: [
-      ['+1', '0'],
-      ['+1','+1'],
-      ['+1','-1']
-    ]
+    // pawn has special moves, so we need function to handle it
+    pawn: function (isWhite, isFirstMove, currentPosition) {
+
+      // standard movement
+      var movementPattern = {
+        white: [
+          ['+2', '0'],
+          ['+1', '0']
+        ],
+        black: [
+          ['-2', '0'],
+          ['-1', '0']
+        ]
+      };
+
+      // capture opponent's piece
+      var capturePattern = {
+        white: [
+          ['+1', '+1'],
+          ['+1', '-1']
+        ],
+        black: [
+          ['-1', '-1'],
+          ['-1', '+1']
+        ]
+      };
+
+      // capture double square movement of opponent's pawn
+      var enPassantPattern = {
+        white: [
+          ['0', '+1'],
+          ['0', '-1']
+        ],
+        black: [
+          ['0', '-1'],
+          ['0', '+1']
+        ]
+      };
+
+      var selectedMovementPattern = movementPattern[isWhite ? 'white' : 'black'];
+      var selectedCapturePattern = capturePattern[isWhite ? 'white' : 'black'];
+      var selectedEnPassantPattern = enPassantPattern[isWhite ? 'white' : 'black'];
+
+      // double square movement allowed?
+      if (!isFirstMove) {
+        selectedMovementPattern.splice(0, 1);
+      }
+
+      // capture on the right
+      var rightCapturePiece = currentGame.getPieceAt(
+        currentPosition.row + parseInt(selectedCapturePattern[0][0]),
+        currentPosition.col + parseInt(selectedCapturePattern[0][1]));
+
+      if (rightCapturePiece && rightCapturePiece.white !== isWhite) {
+        selectedMovementPattern.push(selectedCapturePattern[0]);
+      }
+
+      // capture on the left
+      var leftCapturePiece = currentGame.getPieceAt(
+        currentPosition.row + parseInt(selectedCapturePattern[1][0]),
+        currentPosition.col + parseInt(selectedCapturePattern[1][1]));
+
+      if (leftCapturePiece && leftCapturePiece.white !== isWhite) {
+        selectedMovementPattern.push(selectedCapturePattern[1]);
+      }
+
+      // en passant capture
+      var enPassantRightPiece = currentGame.getPieceAt(
+        currentPosition.row + parseInt(selectedEnPassantPattern[0][0]),
+        currentPosition.col + parseInt(selectedEnPassantPattern[0][1]));
+
+      if (enPassantRightPiece && enPassantRightPiece.is('pawn') && enPassantRightPiece.isFirstMovement()) {
+        // this is double opening of opponent's pawn on the left side
+        selectedMovementPattern.push(selectedCapturePattern[0]);
+      }
+
+      var enPassantLeftPiece = currentGame.getPieceAt(
+        currentPosition.row + parseInt(selectedEnPassantPattern[1][0]),
+        currentPosition.col + parseInt(selectedEnPassantPattern[1][1]));
+
+      if (enPassantLeftPiece && enPassantLeftPiece.is('pawn') && enPassantLeftPiece.isFirstMovement()) {
+        // this is double opening of opponent's pawn on the right side
+        selectedMovementPattern.push(selectedCapturePattern[1]);
+      }
+
+      return selectedMovementPattern;
+    }
+
   };
 
   /**
@@ -106,6 +189,10 @@
     this.before = before; // row, col position before movement
     this.after = after; // row, col position after movement
 
+    this.pawnDoubleSquare = false; // pawn advance two squares
+    this.pawnPromotion = false; // pawn reached latest row and it will be promoted
+    this.castling = false; // rook + king special move
+
     // text representation of movement
     this.text = function () {
       return this.before.text() + ' - ' + this.after.text();
@@ -127,11 +214,21 @@
     this.white = !!white;
     this.active = true; // active or passive piece
     this.selected = false; // selected at that moment
-    this.moved = false; // is this piece moved before
     this.position = position; // position of a piece
+    this.moves = []; // movements of piece
     return this;
   };
+
   piece.prototype.position = typeof position;
+
+  piece.prototype.is = function(pieceType) {
+    return this.typeName === pieceType; // this.piece.is('pawn') ?
+  };
+
+  piece.prototype.isFirstMovement = function() {
+    return this.moves.length === 1;
+  };
+
   piece.prototype.getMoves = function () {
     // we have row, col and piece type
     // so we can extract possible movements according to pattterns
@@ -152,6 +249,10 @@
           return testMove;
         }
       }
+    }
+
+    if (typeof pattern === 'function') {
+      pattern = pattern(self.white, !self.moved, currentPosition);
     }
 
     _.each(pattern, function (pItem, pIndex) {
@@ -311,8 +412,10 @@
     this.turn = !!isWhite; // is it current user's turn to play? default white player
     this.lastMove = null; // last move of current user
     this.white = !!isWhite; // current user has white pieces or not
-    this.pieces = []; // pieces in game
+    this.pieces = []; // pieces in the game
+    this.piecesOut = []; // pieces out of the game
     this.history = []; // array of moves
+    this.castling = [true, true]; // left and right rook castling allowance
     return this;
   };
   user.prototype.lastMove = typeof move;

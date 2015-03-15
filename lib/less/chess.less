@@ -172,7 +172,7 @@ body {
       }
     }
 
-    &.even, &.odd {
+    &.even {
       .col:nth-child(odd) {
         .square {
           &.move {
@@ -183,6 +183,26 @@ body {
       }
 
       .col:nth-child(even) {
+        .square {
+          &.move {
+            background-color: #ffbabe;
+            cursor: pointer;
+          }
+        }
+      }
+    }
+
+    &.odd {
+      .col:nth-child(even) {
+        .square {
+          &.move {
+            background-color: #ff7f74;
+            cursor: pointer;
+          }
+        }
+      }
+
+      .col:nth-child(odd) {
         .square {
           &.move {
             background-color: #ffbabe;
