@@ -1,0 +1,4 @@
+reactive chess
+==============
+
+## Meteor application

@@ -59,7 +59,7 @@ Template.col.events({
     }
 
     // remove possible movement squares of previous selected piece
-    $('.square.move').removeClass('move');
+    $('.square.move').removeClass('move').removeClass('enpassant').removeClass('check');
 
     // add selected class
     $(event.target).addClass('selected');
@@ -81,13 +81,21 @@ Template.col.events({
       var itemCol = item.col;
       var foundItem = $('.square[data-row='+ itemRow +'][data-col-index='+ itemCol +']');
       $(foundItem).addClass('move');
+
+      if (item.isEnPassant) {
+        $(foundItem).addClass('enpassant');
+      }
+
+      if (item.isCheck) {
+        $(foundItem).addClass('check');
+      }
     });
   },
 
   // deselect a piece
   'click .piece.selected': function(event) {
     $(event.target).removeClass('selected');
-    $('.square.move').removeClass('move');
+    $('.square.move').removeClass('move').removeClass('enpassant').removeClass('check');
 
     // remove selected flag
     if (window.chess.selectedPiece) {
@@ -99,16 +107,19 @@ Template.col.events({
   'click .square.move': function(event) {
     var newRow = parseInt($(event.target).attr('data-row') - 1);
     var newCol = parseInt($(event.target).attr('data-col-index'));
+    var isEnPassant = $(event.target).hasClass('enpassant');
     var currentPiece = window.chess.selectedPiece;
 
     if (!(currentPiece && currentPiece.position)) {
       return;
     }
 
-    currentPiece.moveTo(newRow, newCol);
+    currentPiece.moveTo(newRow, newCol, isEnPassant);
 
     $('.square.selected').removeClass('selected');
     $('.square.move').removeClass('move');
+    $('.square.enpassant').removeClass('enpassant');
+    $('.square.check').removeClass('check');
 
     Session.set('chess', window.chess);
   }
