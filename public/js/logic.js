@@ -43,16 +43,6 @@
       ['0', '-p'],
       ['+p', '0']
     ],
-    king: [
-      ['+1', '+1'],
-      ['-1', '-1'],
-      ['-1', '+1'],
-      ['+1', '-1'],
-      ['0', '+1'],
-      ['-1', '0'],
-      ['0', '-1'],
-      ['+1', '0']
-    ],
     knight: [
       ['+2', '+1'],
       ['+1', '+2'],
@@ -63,7 +53,22 @@
       ['+1', '-2'],
       ['+2', '-1']
     ],
-    // pawn has special moves, so we need a function to handle it
+    // king has castling feature, so we need a function to handle it
+    king : function(isWhite, isKingsFirstMove, castlingOptions) {
+      var movementPattern = [
+          ['+1', '+1'],
+          ['-1', '-1'],
+          ['-1', '+1'],
+          ['+1', '-1'],
+          ['0', '+1'],
+          ['-1', '0'],
+          ['0', '-1'],
+          ['+1', '0']
+        ];
+
+
+    },
+    // pawn has special moves, so we need a function to handle thme
     pawn: function (isWhite, isFirstMove, currentPosition) {
 
       // standard movement
@@ -171,7 +176,7 @@
    * @returns {position}
    */
   var position = function (row, col) {
-    this.id = getUniqueId(24);
+    this.id = getUniqueId(24); // TODO: remove this
     this.row = row; // row in number
     this.col = col; // col in number
 
@@ -205,6 +210,7 @@
     this.id = getUniqueId(24);
     this.before = before; // row, col position before movement
     this.after = after; // row, col position after movement
+    // TODO: put piece instead of pieceId or put _id and subDocument
     this.pieceId = null; // type of piece from pieces collection
     this.duration = 0; // movement duration
     //this.check = false; // is it check?
@@ -478,7 +484,12 @@
     // pawn has special movements so we are getting function
     // and passing arguments to get patterns
     if (typeof pattern === 'function') {
-      pattern = pattern(self.white, self.moves.length === 0, currentPosition);
+      if (self.is('pawn')) {
+        pattern = pattern(self.white, self.moves.length === 0, currentPosition);
+      } else if (self.is('king')) {
+        var castlingOption = self.white ? curentGame.white.castling : currentGame.black.castling;
+        pattern = pattern(self.white, self.moves.length === 0, castlingOption);
+      }
     }
 
     // TODO: refactor these if/while sections
@@ -682,8 +693,88 @@
     var self = this;
 
     _.each(self.pieces, function (piece) {
-
+      // TODO: scan all pieces and find out if king is in threat
     });
+  };
+
+  /**
+   * Check if you can do castling
+   *
+   * king did not move
+   * rook did not move
+   * squares have to be unoccupied between rook and king
+   * cannot do castling if it is check
+   * there must be no threat through kings movement points or end point
+   */
+  user.prototype.checkCastling = function() {
+    var self = this;
+
+    var castlingMovement = [
+      ['0', '-2'],
+      ['0', '+2']
+    ];
+
+    function checkProcess(currentUser, isLeft) {
+
+      // determine castling row
+      var castlingRow = currentUser.white ? 0 : 7;
+
+      // check appropriate rook
+      var rookColumn = isLeft ? 0 : 7;
+
+      // occupied squares list
+      var occupiedSquares = isLeft ? [1,2,3] : [5,6];
+
+      // threat squares list
+      var threatSquares = isLeft ? [4,3,2] : [4,5,6];
+
+      // get rook
+      var rook = currentGame.board[castlingRow][0];
+
+      // if rook is available
+      var isRookAvailable = rook && rook.is('rook') && rook.moves.length === 0 && rook.white === isWhite;
+      if (isRookAvailable) {
+
+        // is path between rook and king unoccupied
+        var occupied = _.find(occupiedSquares, function(squareIndex) {
+          return currentGame.board[castlingRow][squareIndex];
+        });
+        if (!occupied) {
+
+          // if it is check or king's castling path in threat
+          var threat = _.find(threatSquares, function(squareIndex) {
+            return currentGame.checkThreat(currentUser.white, castlingRow, squareIndex);
+          });
+          if (threat) {
+            currentUser.castling[0] = false;
+          }
+        } else {
+          currentUser.castling[0] = false;
+        }
+      } else {
+        currentUser.castling[0] = false;
+      }
+
+    }
+
+    if (!this.castling[0] && !this.castling[1]) {
+      return this.castling;
+    }
+
+    var king = _.find(self.pieces, function(item) {
+      return item.is('king');
+    });
+
+    if (king.moves.length > 0) {
+      this.castling = [false, false];
+      return return this.castling;
+    }
+
+    checkProcess(self, true); // left rook
+    checkProcess(self); // right rook
+
+    return self.castling;
+
   };
 
   /**
