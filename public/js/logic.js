@@ -1,6 +1,6 @@
 /**
  * Chess Game Logic
- * by Erhan Gundogan
+ * by Erhan Gundogan <erhan.gundogan@gmail.com>
  * January 2015
  * MIT License
  */
@@ -10,16 +10,41 @@
   'use strict';
 
   var currentGame = null;
+
+  /**
+   * Chessboard column names
+   * @type {string[]}
+   */
   var columns = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+
+  /**
+   * Chessboard row names
+   * @type {number[]}
+   */
   var rows = [1, 2, 3, 4, 5, 6, 7, 8];
+
+  /**
+   * Chessboard piece types
+   * @type {string[]}
+   */
   var pieces = ['pawn', 'knight', 'bishop', 'rook', 'queen', 'king'];
 
+  /**
+   * White player pieces
+   * [0-7] array items indicates pawns
+   * [8-15] array items indicates second row pieces
+   * @type {number[]}
+   */
   var defaultWhitePieces = [0, 0, 0, 0, 0, 0, 0, 0, 3, 1, 2, 4, 5, 2, 1, 3];
+
+  /**
+   * Black player pieces
+   * [0-7] array items indicates second row pieces
+   * [8-15] array items indicates pawns
+   * @type {number[]}
+   */
   var defaultBlackPieces = [3, 1, 2, 4, 5, 2, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0];
 
-  // [row, col]: +/- analytic plane, row:y, col:x
-  // bottom/left:[0,0] - top/right:[7,7]
-  // minus means backwards, different direction for white and black
   /**
    * Represents movement patterns of chess pieces.
    * Each piece's pattern combined of multiple movements.
