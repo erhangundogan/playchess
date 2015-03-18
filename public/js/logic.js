@@ -20,6 +20,15 @@
   // [row, col]: +/- analytic plane, row:y, col:x
   // bottom/left:[0,0] - top/right:[7,7]
   // minus means backwards, different direction for white and black
+  /**
+   * Represents movement patterns of chess pieces.
+   * Each piece's pattern combined of multiple movements.
+   * Each movement combined of [row, column] action.
+   * Each action may contain ±{number}, ±p or 0.
+   * [+p, +p] indicates same amount of positive movement in cartesian coordinate which has current position as an origin.
+   * [-p, -p] indicates same amount of negative movement in cartesian coordinate which has current position as an origin.
+   * @type {{bishop: *[], rook: *[], queen: *[], knight: *[], king: Function, pawn: Function}}
+   */
   var patterns = {
     bishop: [
       ['+p', '+p'],
@@ -53,8 +62,13 @@
       ['+1', '-2'],
       ['+2', '-1']
     ],
-    // king has castling feature, so we need a function to handle it
-    king : function(isWhite, isKingsFirstMove, castlingOptions) {
+    /**
+     * King has castling feature, so we need a function to handle it's movements.
+     * @param {boolean} isWhite - Finds out if it is white user (isWhite === true)
+     * @returns {Array.<[string, string]>} - Possible movements array
+     */
+    king : function(isWhite) {
+      var castlingMovement = [];
       var movementPattern = [
           ['+1', '+1'],
           ['-1', '-1'],
@@ -65,10 +79,16 @@
           ['0', '-1'],
           ['+1', '0']
         ];
-
-
+      var currentUser = currentGame[isWhite ? 'white' : 'black'];
+      return movementPattern.concat(currentUser.getCastlingMove());
     },
-    // pawn has special moves, so we need a function to handle thme
+    /**
+     * Pawn has special moves, so we need a function to handle them.
+     * @param {boolean} isWhite - Is it white user (isWhite === true)
+     * @param {boolean} isFirstMove - Is it pawn's first movement
+     * @param {position} currentPosition - Current position of pawn
+     * @returns {Array.<[string, string]>} - Possible movements array
+     */
     pawn: function (isWhite, isFirstMove, currentPosition) {
 
       // standard movement
@@ -169,47 +189,49 @@
   };
 
   /**
-   * position
-   *
-   * @param row
-   * @param col
+   * Represents any square on chessboard.
+   * @constructor
+   * @param {number} row - Represents a row shown by 1-8 numbers on a chessboard (bottom:0, top:7)
+   * @param {number} col - Represents a column shown by a-h characters on a chessboard (left:0, right:7)
    * @returns {position}
    */
   var position = function (row, col) {
-    this.id = getUniqueId(24); // TODO: remove this
     this.row = row; // row in number
     this.col = col; // col in number
-
-    // text representation of position
-    this.text = function () {
-      return columns[this.col] + '' + this.row;
-    };
     return this;
   };
 
   /**
-   * position is on chessboard?
-   *
+   * Validates the bounds of itself.
    * @returns {boolean}
    */
   position.prototype.isValid = function () {
     return this.row <= 7 && this.row >= 0 && this.col <= 7 && this.col >= 0;
   };
-
+  /**
+   * Default white user's first (pawn's) row
+   * @type {position}
+   */
   var defaultWhitePosition = new position(1, 0);
+
+  /**
+   * Default black user's first (pawn's) row.
+   * @type {position}
+   */
   var defaultBlackPosition = new position(7, 0);
 
   /**
-   * movement
-   *
-   * @param before
-   * @param after
+   * Represents movement of a piece.
+   * @constructor
+   * @param {position} before - position before movement
+   * @param {position} after - position after movement
    * @returns {movement}
    */
   var movement = function (before, after) {
     this.id = getUniqueId(24);
     this.before = before; // row, col position before movement
     this.after = after; // row, col position after movement
+
     // TODO: put piece instead of pieceId or put _id and subDocument
     this.pieceId = null; // type of piece from pieces collection
     this.duration = 0; // movement duration
@@ -224,12 +246,25 @@
     };
     return this;
   };
+  /**
+   * before holds position object.
+   * @type {position}
+   */
   movement.prototype.before = typeof position;
-  movement.prototype.after = typeof position;
 
   /**
-   * piece
-   *
+   * after holds position object.
+   * @type {position}
+   */
+  movement.prototype.after = typeof position;
+
+
+  /**
+   * Represents any chess piece of a user.
+   * @constructor
+   * @param {number} type - index of item located in "pieces" variable
+   * @param {boolean} white - is it white user?
+   * @param {position} position - current position of created piece
    * @returns {piece}
    */
   var piece = function (type, white, position) {
@@ -243,21 +278,23 @@
     this.moves = []; // movements of piece
     return this;
   };
+  /**
+   * Current position of this piece
+   * @type {position}
+   */
   piece.prototype.position = typeof position;
 
   /**
-   * checks if piece is certain type
-   *
-   * @param pieceType
-   * @returns {boolean}
+   * Validates piece type.
+   * @param {string} pieceType - string representation of piece type to validate (e.g 'pawn')
+   * @returns {boolean} - this piece has same type as pieceType
    */
   piece.prototype.is = function (pieceType) {
     return this.typeName === pieceType; // this.piece.is('pawn') ?
   };
 
   /**
-   * is it first movement of piece
-   *
+   * Is it first movement of this piece.
    * @returns {boolean}
    */
   piece.prototype.isFirstMovement = function () {
@@ -265,23 +302,22 @@
   };
 
   /**
-   * whenever piece moved to another position:
+   * whenever piece moved to another position this method does:
+   *   remove selected piece from board position
+   *   remove opponent's piece if it is captured
+   *   change captured piece to passive
+   *   add selected piece to clicked square in board array
+   *   change position of selected piece (ok)
+   *   add movement to piece's moves array
+   *   add movement to user's history
+   *   remove selected flag
+   *   change turn
+   *   reset timer
+   *   clear selected, move classes
    *
-   * remove selected piece from board position
-   * remove opponent's piece if it is captured
-   * change captured piece to passive
-   * add selected piece to clicked square in board array
-   * change position of selected piece (ok)
-   * add movement to piece's moves array
-   * add movement to user's history
-   * remove selected flag
-   * change turn
-   * reset timer
-   * clear selected, move classes
-   *
-   * @param newRow
-   * @param newCol
-   * @param isEnPassant
+   * @param {number} newRow - New position to be moved
+   * @param {number} newCol - Old position moved from
+   * @param {boolean} isEnPassant - Is it en passant movement (pawn captures 2 square moved pawn by intercepting it)
    */
   piece.prototype.moveTo = function (newRow, newCol, isEnPassant) {
     var oldPosition = this.position;
@@ -302,9 +338,10 @@
       }
     }
 
-    // is it rook and not played before?
-    // if so, which rook is it?
-    // it is necessary for castling
+    /**
+     * is it rook and not played before?
+     * if so, which rook is it?
+     */
     if (this.is('rook') && this.moves.length === 0) {
       // white user
       if (this.white) {
@@ -381,7 +418,8 @@
   };
 
   /**
-   * captures this piece
+   * Captures this piece and set it as passive.
+   * @returns {undefined}
    */
   piece.prototype.capture = function () {
     var self = this;
@@ -407,8 +445,7 @@
   };
 
   /**
-   * gets possible movements of a piece
-   *
+   * Gets possible movements of a piece.
    * @returns {Array}
    */
   piece.prototype.getMoves = function () {
@@ -658,8 +695,9 @@
   };
 
   /**
-   * user
-   *
+   * Represents a user either white or black.
+   * @constructor
+   * @param {boolean} isWhite - is it white user?
    * @returns {user}
    */
   var user = function (isWhite) {
@@ -675,10 +713,9 @@
   };
 
   /**
-   * gets that user's last movement
-   * necessary for en passant
-   *
-   * @returns {*}
+   * Gets the user's last movement.
+   * It would be necessary to determine en passant movement
+   * @returns {movement|null}
    */
   user.prototype.getLastMove = function () {
     if (this.history.length > 0) {
@@ -689,7 +726,11 @@
   };
 
 
-  user.prototype.isCheck = function () {
+  /**
+   * Current user's last movement caused check?
+   * @param {boolean} isWhite - is it white user?
+   */
+  user.prototype.isCheck = function (isWhite) {
     var self = this;
 
     _.each(self.pieces, function (piece) {
@@ -698,20 +739,17 @@
   };
 
   /**
-   * Check if you can do castling
-   *
-   * king did not move
-   * rook did not move
+   * Checks if you can do castling or not.
+   * king should not be moved
+   * rook should not be moved
    * squares have to be unoccupied between rook and king
    * cannot do castling if it is check
    * there must be no threat through kings movement points or end point
    */
-  user.prototype.checkCastling = function() {
+  user.prototype.getCastlingMove = function() {
     var self = this;
 
     var castlingMovement = [
-      ['0', '-2'],
-      ['0', '+2']
     ];
 
     function checkProcess(currentUser, isLeft) {
@@ -733,17 +771,17 @@
 
       // if rook is available
       var isRookAvailable = rook && rook.is('rook') && rook.moves.length === 0 && rook.white === isWhite;
-      if (isRookAvailable) {
 
+      if (isRookAvailable) {
         // is path between rook and king unoccupied
         var occupied = _.find(occupiedSquares, function(squareIndex) {
           return currentGame.board[castlingRow][squareIndex];
         });
-        if (!occupied) {
 
+        if (!occupied) {
           // if it is check or king's castling path in threat
           var threat = _.find(threatSquares, function(squareIndex) {
-            return currentGame.checkThreat(currentUser.white, castlingRow, squareIndex);
+            return currentGame.checkPositionThreat(currentUser.white, castlingRow, squareIndex);
           });
           if (threat) {
             currentUser.castling[0] = false;
@@ -754,11 +792,10 @@
       } else {
         currentUser.castling[0] = false;
       }
-
     }
 
     if (!this.castling[0] && !this.castling[1]) {
-      return this.castling;
+      return castlingMovement;
     }
 
     var king = _.find(self.pieces, function(item) {
@@ -767,19 +804,30 @@
 
     if (king.moves.length > 0) {
       this.castling = [false, false];
-      return return this.castling;
+      return castlingMovement;
     }
 
-    checkProcess(self, true); // left rook
-    checkProcess(self); // right rook
+    if (this.castling[0]) {
+      checkProcess(self, true); // left rook
+      if (this.castling[0]) {
+        castlingMovement.push(['0', '-2']);
+      }
+    }
 
-    return self.castling;
+    if (this.castling[1]) {
+      checkProcess(self); // right rook
+      if (this.castling[1]) {
+        castlingMovement.push(['0', '+2']);
+      }
+    }
+
+    return castlingMovement;
 
   };
 
   /**
-   * game
-   *
+   * Represents current game and it's arguments
+   * @constructor
    * @returns {game}
    */
   var game = function () {
@@ -810,12 +858,17 @@
 
     return this;
   };
+
+  /**
+   * Represents current user's selected piece
+   * @type {piece}
+   */
   game.prototype.selectedPiece = typeof piece;
 
   /**
    * Game initialization sequence
-   * @param isWhite
-   * @returns {Array}
+   * @param {boolean} isWhite - is it white player?
+   * @returns {Array.<piece>} - current user's pieces
    */
   game.prototype.init = function (isWhite) {
     var position = isWhite ? defaultWhitePosition : defaultBlackPosition;
@@ -854,9 +907,9 @@
 
   /**
    * Gives piece of user at rowIndex, colIndex
-   * @param rowIndex : begins from 0
-   * @param colIndex : begins from 0
-   * @returns {piece}
+   * @param {number} rowIndex - row of chessboard to be searched
+   * @param {number} colIndex - column of chessboard to be searched
+   * @returns {piece|undefined} - returns piece in that position otherwise undefined
    */
   game.prototype.getPieceAt = function (rowIndex, colIndex) {
     var foundItem = null;
@@ -891,6 +944,19 @@
       }
     }
   };
+
+  /**
+   * Finds threats for position indicated by rowIndex, colIndex against player white/black
+   * @param {boolean} isWhite - if true, it finds threat against white player's piece otherwise black
+   * @param {number} rowIndex - row number (0-7)
+   * @param {number} colIndex - column number (0-7)
+   * @returns {boolean}
+   */
+  game.prototype.checkPositionThreat = function(isWhite, rowIndex, colIndex) {
+    var result = false;
+    return result;
+  };
+
 
   /**
    * https://github.com/erhangundogan/jstools/blob/master/lib/jstools.js
