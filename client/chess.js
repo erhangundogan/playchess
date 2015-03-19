@@ -59,7 +59,12 @@ Template.col.events({
     }
 
     // remove possible movement squares of previous selected piece
-    $('.square.move').removeClass('move').removeClass('enpassant').removeClass('check');
+    $('.square.move')
+      .removeClass('move')
+      .removeClass('enpassant')
+      .removeClass('left-castling')
+      .removeClass('right-castling')
+      .removeClass('check');
 
     // add selected class
     $(event.target).addClass('selected');
@@ -86,6 +91,10 @@ Template.col.events({
         $(foundItem).addClass('enpassant');
       }
 
+      if (item.isCastling) {
+        $(foundItem).addClass(item.isCastling + '-castling');
+      }
+
       if (item.isCheck) {
         $(foundItem).addClass('check');
       }
@@ -95,7 +104,12 @@ Template.col.events({
   // deselect a piece
   'click .piece.selected': function(event) {
     $(event.target).removeClass('selected');
-    $('.square.move').removeClass('move').removeClass('enpassant').removeClass('check');
+    $('.square.move')
+      .removeClass('move')
+      .removeClass('enpassant')
+      .removeClass('left-castling')
+      .removeClass('right-castling')
+      .removeClass('check');
 
     // remove selected flag
     if (window.chess.selectedPiece) {
@@ -108,17 +122,21 @@ Template.col.events({
     var newRow = parseInt($(event.target).attr('data-row') - 1);
     var newCol = parseInt($(event.target).attr('data-col-index'));
     var isEnPassant = $(event.target).hasClass('enpassant');
+    var isLeftCastling = $(event.target).hasClass('left-castling');
+    var isRightCastling = $(event.target).hasClass('right-castling');
     var currentPiece = window.chess.selectedPiece;
 
     if (!(currentPiece && currentPiece.position)) {
       return;
     }
 
-    currentPiece.moveTo(newRow, newCol, isEnPassant);
+    currentPiece.moveTo(newRow, newCol, isEnPassant, isLeftCastling, isRightCastling);
 
     $('.square.selected').removeClass('selected');
     $('.square.move').removeClass('move');
     $('.square.enpassant').removeClass('enpassant');
+    $('.square.left-castling').removeClass('left-castling');
+    $('.square.right-castling').removeClass('right-castling');
     $('.square.check').removeClass('check');
 
     Session.set('chess', window.chess);

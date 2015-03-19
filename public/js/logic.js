@@ -93,7 +93,6 @@
      * @returns {Array.<[string, string]>} - Possible movements array
      */
     king : function(isWhite) {
-      var castlingMovement = [];
       var movementPattern = [
           ['+1', '+1'],
           ['-1', '-1'],
@@ -343,8 +342,10 @@
    * @param {number} newRow - New position to be moved
    * @param {number} newCol - Old position moved from
    * @param {boolean} isEnPassant - Is it en passant movement (pawn captures 2 square moved pawn by intercepting it)
+   * @param {boolean} isLeftCastling - Is it left castling
+   * @param {boolean} isRightCastling - Is it right castling
    */
-  piece.prototype.moveTo = function (newRow, newCol, isEnPassant) {
+  piece.prototype.moveTo = function (newRow, newCol, isEnPassant, isLeftCastling, isRightCastling) {
     var oldPosition = this.position;
     var newPosition = new position(newRow, newCol);
     var capturedPiece = null;
@@ -355,6 +356,10 @@
       if (capturedPiece) {
         capturedPiece.capture();
       }
+    } else if (isLeftCastling) {
+      // TODO: finish him
+    } else if (isRightCastling) {
+
     } else {
       // remove piece if it is captured
       capturedPiece = currentGame.getPieceAt(newRow, newCol);
@@ -474,9 +479,6 @@
    * @returns {Array}
    */
   piece.prototype.getMoves = function () {
-    // we have row, col and piece type
-    // so we can extract possible movements according to pattterns
-    // underscore library would be essential
     var self = this;
     var moves = [];
     var pattern = patterns[self.typeName]; // get appropriate pattern
@@ -521,6 +523,17 @@
             // testMove.enPassantPiece = enPassantPiece ? enPassantPiece : null;
 
             return testMove;
+          } else if (self.is('king') && Math.abs(colDiff) === 2) {
+            // it is castling
+            if ((self.white && colAmount === '+2') || (!self.white && colAmount === '+2')) {
+              // white right castling
+              testMove.isCastling = 'right';
+              return testMove;
+            } else if ((self.white && colAmount === '-2') || (!self.white && colAmount === '-2')) {
+              // white left castling
+              testMove.isCastling = 'left';
+              return testMove;
+            }
           } else {
             testMove.isCaptured = false;
             return testMove;
@@ -549,8 +562,8 @@
       if (self.is('pawn')) {
         pattern = pattern(self.white, self.moves.length === 0, currentPosition);
       } else if (self.is('king')) {
-        var castlingOption = self.white ? curentGame.white.castling : currentGame.black.castling;
-        pattern = pattern(self.white, self.moves.length === 0, castlingOption);
+        var castlingOption = self.white ? currentGame.white.castling : currentGame.black.castling;
+        pattern = pattern(self.white);
       }
     }
 
@@ -795,7 +808,7 @@
       var rook = currentGame.board[castlingRow][0];
 
       // if rook is available
-      var isRookAvailable = rook && rook.is('rook') && rook.moves.length === 0 && rook.white === isWhite;
+      var isRookAvailable = rook && rook.is('rook') && rook.moves.length === 0 && rook.white === self.white;
 
       if (isRookAvailable) {
         // is path between rook and king unoccupied
