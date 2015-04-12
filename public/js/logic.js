@@ -331,7 +331,7 @@
    *   remove opponent's piece if it is captured
    *   change captured piece to passive
    *   add selected piece to clicked square in board array
-   *   change position of selected piece (ok)
+   *   change position of selected piece
    *   add movement to piece's moves array
    *   add movement to user's history
    *   remove selected flag
@@ -763,7 +763,6 @@
     return null;
   };
 
-
   /**
    * Current user's last movement caused check?
    * @param {boolean} isWhite - is it white user?
@@ -795,6 +794,9 @@
       // determine castling row
       var castlingRow = currentUser.white ? 0 : 7;
 
+      // set castling index, left:0, right:1
+      var castlingArrayIndex = isLeft ? 0 : 1;
+
       // check appropriate rook
       var rookColumn = isLeft ? 0 : 7;
 
@@ -802,10 +804,10 @@
       var occupiedSquares = isLeft ? [1,2,3] : [5,6];
 
       // threat squares list
-      var threatSquares = isLeft ? [4,3,2] : [4,5,6];
+      var threatSquares = isLeft ? [4,3,2,1] : [4,5,6];
 
       // get rook
-      var rook = currentGame.board[castlingRow][0];
+      var rook = currentGame.board[castlingRow][rookColumn];
 
       // if rook is available
       var isRookAvailable = rook && rook.is('rook') && rook.moves.length === 0 && rook.white === self.white;
@@ -822,13 +824,13 @@
             return currentGame.checkPositionThreat(currentUser.white, castlingRow, squareIndex);
           });
           if (threat) {
-            currentUser.castling[0] = false;
+            currentUser.castling[castlingArrayIndex] = false;
           }
         } else {
-          currentUser.castling[0] = false;
+          currentUser.castling[castlingArrayIndex] = false;
         }
       } else {
-        currentUser.castling[0] = false;
+        currentUser.castling[castlingArrayIndex] = false;
       }
     }
 
@@ -845,18 +847,14 @@
       return castlingMovement;
     }
 
+    checkProcess(self, true); // left rook
     if (this.castling[0]) {
-      checkProcess(self, true); // left rook
-      if (this.castling[0]) {
-        castlingMovement.push(['0', '-2']);
-      }
+      castlingMovement.push(['0', '-2']);
     }
 
+    checkProcess(self); // right rook
     if (this.castling[1]) {
-      checkProcess(self); // right rook
-      if (this.castling[1]) {
-        castlingMovement.push(['0', '+2']);
-      }
+      castlingMovement.push(['0', '+2']);
     }
 
     return castlingMovement;
@@ -991,8 +989,27 @@
    * @returns {boolean}
    */
   game.prototype.checkPositionThreat = function(isWhite, rowIndex, colIndex) {
-    var result = false;
-    return result;
+
+    // we are looking threats against isWhite specific user's possible position
+    // If isWhite === true then we will check black user's pieces
+    var checkPiecesOf = isWhite ? this.black : this.white;
+
+    var hasThreat = _.find(checkPiecesOf.pieces, function(piece) {
+      var moves = piece.getMoves();
+      var isPositionThreaten = _.find(moves, function(move) {
+        return move.row === rowIndex && move.col === colIndex;
+      });
+
+      if (isPositionThreaten >= 0) {
+        return piece
+      } else {
+        return false;
+      }
+    });
+
+    debugger;
+
+    return hasThreat;
   };
 
 
