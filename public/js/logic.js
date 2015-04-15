@@ -823,14 +823,17 @@
           var threat = _.find(threatSquares, function(squareIndex) {
             return currentGame.checkPositionThreat(currentUser.white, castlingRow, squareIndex);
           });
-          if (threat) {
-            currentUser.castling[castlingArrayIndex] = false;
-          }
+
+          // if there is no threat we can do castling otherwise no
+          return !!threat;
+
         } else {
-          currentUser.castling[castlingArrayIndex] = false;
+          // squares betweek rook and king occupied. this castling cannot available
+          return false;
         }
       } else {
-        currentUser.castling[castlingArrayIndex] = false;
+        // rook is not available
+        return false;
       }
     }
 
@@ -847,14 +850,18 @@
       return castlingMovement;
     }
 
-    checkProcess(self, true); // left rook
+    // left
     if (this.castling[0]) {
-      castlingMovement.push(['0', '-2']);
+      if (checkProcess(self, true)) {
+        castlingMovement.push(['0', '-2']);
+      }
     }
 
-    checkProcess(self); // right rook
+    // right
     if (this.castling[1]) {
-      castlingMovement.push(['0', '+2']);
+      if (checkProcess(self)) {
+        castlingMovement.push(['0', '+2']);
+      }
     }
 
     return castlingMovement;
