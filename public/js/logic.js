@@ -92,17 +92,17 @@
      * @param {boolean} isWhite - Finds out if it is white user (isWhite === true)
      * @returns {Array.<[string, string]>} - Possible movements array
      */
-    king : function(isWhite) {
+    king: function (isWhite) {
       var movementPattern = [
-          ['+1', '+1'],
-          ['-1', '-1'],
-          ['-1', '+1'],
-          ['+1', '-1'],
-          ['0', '+1'],
-          ['-1', '0'],
-          ['0', '-1'],
-          ['+1', '0']
-        ];
+        ['+1', '+1'],
+        ['-1', '-1'],
+        ['-1', '+1'],
+        ['+1', '-1'],
+        ['0', '+1'],
+        ['-1', '0'],
+        ['0', '-1'],
+        ['+1', '0']
+      ];
       var currentUser = currentGame[isWhite ? 'white' : 'black'];
       return movementPattern.concat(currentUser.getCastlingMove());
     },
@@ -185,11 +185,13 @@
         currentPosition.row + parseInt(selectedEnPassantPattern[0][0]),
         currentPosition.col + parseInt(selectedEnPassantPattern[0][1]));
 
+
       if (enPassantRightPiece &&
         isWhite !== enPassantRightPiece.white &&
         enPassantRightPiece.is('pawn') &&
         enPassantRightPiece.isFirstMovement() &&
-        enPassantRightPiece.id === lastMove.pieceId) {
+        enPassantRightPiece.id === lastMove.pieceId &&
+        Math.abs(enPassantRightPiece.moves[0].after.row - enPassantRightPiece.moves[0].before.row) === 2) {
         // this is double opening of opponent's pawn on the left side
         selectedMovementPattern.push(selectedCapturePattern[0]);
       }
@@ -202,9 +204,17 @@
         isWhite !== enPassantLeftPiece.white &&
         enPassantLeftPiece.is('pawn') &&
         enPassantLeftPiece.isFirstMovement() &&
-        enPassantLeftPiece.id === lastMove.pieceId) {
+        enPassantLeftPiece.id === lastMove.pieceId &&
+        Math.abs(enPassantLeftPiece.moves[0].after.row - enPassantLeftPiece.moves[0].before.row) === 2) {
         // this is double opening of opponent's pawn on the right side
         selectedMovementPattern.push(selectedCapturePattern[1]);
+      }
+
+      var promote = (isWhite && currentPosition.row + 1 === currentGame.black.placement.lastRow) ||
+        (!isWhite && currentPosition.row - 1 === currentGame.white.placement.lastRow);
+
+      if (promote) {
+        selectedMovementPattern.push(['promote']);
       }
 
       return selectedMovementPattern;
@@ -232,6 +242,7 @@
   position.prototype.isValid = function () {
     return this.row <= 7 && this.row >= 0 && this.col <= 7 && this.col >= 0;
   };
+
   /**
    * Default white user's first (pawn's) row
    * @type {position}
@@ -259,17 +270,19 @@
     // TODO: put piece instead of pieceId or put _id and subDocument
     this.pieceId = null; // type of piece from pieces collection
     this.duration = 0; // movement duration
-    //this.check = false; // is it check?
-    //this.checkmate = false; // is it checkmate?
-    //this.pawnPromotion = false; // pawn reached latest row and it will be promoted
-    //this.castling = false; // rook + king special movement
+    this.special = []; // enpassant, castling, promote, check, checkmate, draw
 
-    // text representation of movement
-    this.text = function () {
-      return this.before.text() + ' - ' + this.after.text();
-    };
     return this;
   };
+
+  /**
+   * text representation of movement
+   * @returns {string}
+   */
+  movement.prototype.text = function() {
+    return this.before.text() + ' - ' + this.after.text();
+  };
+
   /**
    * before holds position object.
    * @type {position}
@@ -281,7 +294,6 @@
    * @type {position}
    */
   movement.prototype.after = typeof position;
-
 
   /**
    * Represents any chess piece of a user.
@@ -302,6 +314,7 @@
     this.moves = []; // movements of piece
     return this;
   };
+
   /**
    * Current position of this piece
    * @type {position}
@@ -348,17 +361,75 @@
   piece.prototype.moveTo = function (newRow, newCol, isEnPassant, isLeftCastling, isRightCastling) {
     var oldPosition = this.position;
     var newPosition = new position(newRow, newCol);
+    var currentUser = this.white ? currentGame.white : currentGame.black;
+
+    var timeAndMovement = {};
     var capturedPiece = null;
+    var rookColumn = null;
+    var rookRow = null;
+    var rook = null;
+
+    var setMovementFlags = function(currentPiece, newPosition, oldPosition) {
+      // calculate elapsed time and replace timer with new one
+      var currentTime = (new Date()).getTime();
+      var timeDiff = currentTime - currentGame.timer;
+      currentGame.timer = currentTime;
+
+      // create movement record
+      var currentMovement = new movement(oldPosition, newPosition);
+      currentMovement.pieceId = currentPiece.id;
+      currentMovement.duration = timeDiff;
+
+      // add new position to piece
+      currentPiece.position = newPosition;
+
+      // add movement to piece's movements list
+      currentPiece.moves.push(currentMovement);
+
+      // change position of piece on board
+      currentGame.board[oldPosition.row][oldPosition.col] = null;
+      currentGame.board[newPosition.row][newPosition.col] = currentPiece;
+
+      if (currentGame.selectedPiece) {
+        currentGame.selectedPiece.selected = false;
+        currentGame.selectedPiece = null;
+      }
+
+      return {
+        timeDiff: timeDiff,
+        currentMovement: currentMovement
+      };
+    };
 
     if (isEnPassant) {
-      // remove en passant capture
-      capturedPiece = currentGame.getPieceAt( (this.white ? newRow - 1 : newRow + 1), newCol );
+      // en passant capture
+      capturedPiece = currentGame.getPieceAt((this.white ? newRow - 1 : newRow + 1), newCol);
+
       if (capturedPiece) {
         capturedPiece.capture();
       }
-    } else if (isLeftCastling) {
-      // TODO: finish him
-    } else if (isRightCastling) {
+      timeAndMovement = setMovementFlags(this, newPosition, oldPosition);
+
+    } else if (isLeftCastling || isRightCastling) {
+      // move king and then rook
+      setMovementFlags(this, newPosition, oldPosition);
+
+      // rook column movement after castling
+      var rookColumnMove = isLeftCastling ? 3 : -2;
+
+      var rookCurrentRow = currentUser.placement.lastRow;
+      var rookCurrentColumn = isLeftCastling ?
+        currentUser.placement.firstColumn : currentUser.placement.lastColumn;
+      var rookCurrentPosition = new position(rookCurrentRow, rookCurrentColumn);
+
+      var rookNewColumn = rookCurrentColumn + rookColumnMove;
+      var rookNewPosition = new position(rookCurrentRow, rookNewColumn);
+
+      // where is out castling rook
+      rook = currentGame.getPieceAt(rookCurrentRow, rookCurrentColumn);
+
+      // move rook
+      timeAndMovement = setMovementFlags(rook, rookNewPosition, rookCurrentPosition);
 
     } else {
       // remove piece if it is captured
@@ -366,84 +437,37 @@
       if (capturedPiece) {
         capturedPiece.capture();
       }
+      timeAndMovement = setMovementFlags(this, newPosition, oldPosition);
     }
 
-    /**
-     * is it rook and not played before?
-     * if so, which rook is it?
-     */
     if (this.is('rook') && this.moves.length === 0) {
-      // white user
-      if (this.white) {
-        // left or right rook
-        if (oldPosition.row === 0 && oldPosition.col === 0) {
-          // set left castling false
-          currentGame.white.castling[0] = false;
-        } else if (oldPosition.row === 0 && oldPosition.col === 7) {
-          // set right castling false
-          currentGame.white.castling[1] = false;
-        }
-      } else {
-        // left or right rook
-        if (oldPosition.row === 7 && oldPosition.col === 0) {
-          // set right castling false
-          currentGame.black.castling[1] = false;
-        } else if (oldPosition.row === 7 && oldPosition.col === 7) {
-          // set left castling false
-          currentGame.black.castling[0] = false;
-        }
+      // left or right rook
+      if (oldPosition.row === currentUser.placement.lastRow &&
+        oldPosition.col === currentUser.placement.firstColumn) {
+        // set left castling false
+        currentUser.castling[0] = false;
+      } else if (oldPosition.row === currentUser.placement.lastRow &&
+        oldPosition.col === currentUser.placement.lastColumn) {
+        // set right castling false
+        currentUser.castling[1] = false;
       }
     } else if (this.is('king') && this.moves.length === 0) {
       // if it is king set both castling false
-      if (this.white) {
-        currentGame.white.castling = [false, false];
-      } else {
-        currentGame.black.castling = [false, false];
-      }
+      currentUser.castling = [false, false];
     }
-
-    // calculate elapsed time and replace timer with new one
-    var currentTime = (new Date()).getTime();
-    var timeDiff = currentTime - currentGame.timer;
-    currentGame.timer = currentTime;
-
-    // create movement record
-    var currentMovement = new movement(oldPosition, newPosition);
-    currentMovement.pieceId = this.id;
-    currentMovement.duration = timeDiff;
-
-    // is this movement pawn promotion?
-    if (this.is('pawn') && ((this.white && newRow === 7) || (!this.white && newRow === 0))) {
-      // set movement as pawn promotion
-      currentMovement.pawnPromotion = true;
-
-      // TODO: handle pawn promotion
-    }
-
-    // add new position to piece
-    this.position = newPosition;
-
-    // add movement to piece's movements list
-    this.moves.push(currentMovement);
-
-    // change position of piece on board
-    currentGame.board[oldPosition.row][oldPosition.col] = null;
-    currentGame.board[newRow][newCol] = this;
-    currentGame.selectedPiece.selected = false;
-    currentGame.selectedPiece = null;
 
     // change turn to another player
     if (currentGame.turn === 'white') {
       currentGame.turn = 'black';
-      currentGame.white.history.push(currentMovement);
-      currentGame.white.elapsedTime.push(timeDiff);
+      currentGame.white.history.push(timeAndMovement.currentMovement);
+      currentGame.white.elapsedTime.push(timeAndMovement.timeDiff);
     } else {
       currentGame.turn = 'white';
-      currentGame.black.history.push(currentMovement);
-      currentGame.black.elapsedTime.push(timeDiff);
+      currentGame.black.history.push(timeAndMovement.currentMovement);
+      currentGame.black.elapsedTime.push(timeAndMovement.timeDiff);
     }
 
-    // TODO: isCheck and isCheckMate control
+    return this;
 
   };
 
@@ -509,7 +533,7 @@
           // there is no capture, move to that position
           if (self.is('pawn') && Math.abs(rowDiff) === 2) {
             // check if there is a piece in front of pawn blocking double square move
-            if (!(currentGame.getPieceAt( (rowDiff < 0 ? newRow + 1 : newRow - 1), newCol ))) {
+            if (!(currentGame.getPieceAt((rowDiff < 0 ? newRow + 1 : newRow - 1), newCol))) {
               testMove.isCaptured = false;
               return testMove;
             }
@@ -685,6 +709,10 @@
           }
         }
 
+      } else if (pItem[0] === 'promote') {
+
+        // TODO: promote pawn
+
       } else {
 
         if (pItem[1] === '+p') {
@@ -747,6 +775,15 @@
     this.piecesOut = []; // pieces out of the game
     this.history = []; // array of moves
     this.castling = [true, true]; // left and right rook castling allowance
+
+    // set default placement
+    this.placement = {
+      firstColumn: 0,
+      lastColumn: 7,
+      firstRow: isWhite ? 1 : 6,
+      lastRow: isWhite ? 0 : 7
+    };
+
     return this;
   };
 
@@ -783,11 +820,10 @@
    * cannot do castling if it is check
    * there must be no threat through kings movement points or end point
    */
-  user.prototype.getCastlingMove = function() {
+  user.prototype.getCastlingMove = function () {
     var self = this;
 
-    var castlingMovement = [
-    ];
+    var castlingMovement = [];
 
     function checkProcess(currentUser, isLeft) {
 
@@ -801,10 +837,10 @@
       var rookColumn = isLeft ? 0 : 7;
 
       // occupied squares list
-      var occupiedSquares = isLeft ? [1,2,3] : [5,6];
+      var occupiedSquares = isLeft ? [1, 2, 3] : [5, 6];
 
       // threat squares list
-      var threatSquares = isLeft ? [4,3,2,1] : [4,5,6];
+      var threatSquares = isLeft ? [4, 3, 2, 1] : [4, 5, 6];
 
       // get rook
       var rook = currentGame.board[castlingRow][rookColumn];
@@ -814,18 +850,19 @@
 
       if (isRookAvailable) {
         // is path between rook and king unoccupied
-        var occupied = _.find(occupiedSquares, function(squareIndex) {
+        var occupied = _.find(occupiedSquares, function (squareIndex) {
           return currentGame.board[castlingRow][squareIndex];
         });
 
         if (!occupied) {
           // if it is check or king's castling path in threat
-          var threat = _.find(threatSquares, function(squareIndex) {
-            return currentGame.checkPositionThreat(currentUser.white, castlingRow, squareIndex);
-          });
+          /*var threat = _.find(threatSquares, function(squareIndex) {
+           return currentGame.checkPositionThreat(currentUser.white, castlingRow, squareIndex);
+           });*/
 
           // if there is no threat we can do castling otherwise no
-          return !!threat;
+          // return !!threat;
+          return true;
 
         } else {
           // squares betweek rook and king occupied. this castling cannot available
@@ -841,7 +878,7 @@
       return castlingMovement;
     }
 
-    var king = _.find(self.pieces, function(item) {
+    var king = _.find(self.pieces, function (item) {
       return item.is('king');
     });
 
@@ -942,7 +979,7 @@
 
       // setup second row of pieces
       if (position.col === 0) {
-        position.row = isWhite ? 0 : 6;
+        position.row = isWhite ? self.white.placement.lastRow : self.black.placement.firstRow;
       }
       return newPiece;
     });
@@ -995,15 +1032,15 @@
    * @param {number} colIndex - column number (0-7)
    * @returns {boolean}
    */
-  game.prototype.checkPositionThreat = function(isWhite, rowIndex, colIndex) {
+  game.prototype.checkPositionThreat = function (isWhite, rowIndex, colIndex) {
 
     // we are looking threats against isWhite specific user's possible position
     // If isWhite === true then we will check black user's pieces
     var checkPiecesOf = isWhite ? this.black : this.white;
 
-    var hasThreat = _.find(checkPiecesOf.pieces, function(piece) {
+    var hasThreat = _.find(checkPiecesOf.pieces, function (piece) {
       var moves = piece.getMoves();
-      var isPositionThreaten = _.find(moves, function(move) {
+      var isPositionThreaten = _.find(moves, function (move) {
         return move.row === rowIndex && move.col === colIndex;
       });
 
@@ -1014,11 +1051,8 @@
       }
     });
 
-    debugger;
-
     return hasThreat;
   };
-
 
   /**
    * https://github.com/erhangundogan/jstools/blob/master/lib/jstools.js
