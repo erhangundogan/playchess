@@ -811,12 +811,15 @@
    * Current user's last movement caused check?
    * @param {boolean} isWhite - is it white user?
    */
-  user.prototype.isCheck = function (isWhite) {
+  user.prototype.isCheck = function () {
     var self = this;
-
-    _.each(self.pieces, function (piece) {
-      // TODO: scan all pieces and find out if king is in threat
+    var kingPiece = _.find(self.pieces, function (piece) {
+      return piece.is('king');
     });
+
+    console.log('CANNOT MOVE THERE!');
+
+    return currentGame.checkPositionThreat(self.white, kingPiece.row, kingPiece.col);
   };
 
   /**
@@ -869,7 +872,7 @@
 
           // if there is no threat we can do castling otherwise no
           return !threat;
-          
+
         } else {
           // squares betweek rook and king occupied. this castling cannot available
           return false;
