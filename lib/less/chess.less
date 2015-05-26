@@ -175,41 +175,25 @@ body {
     &.even {
       .col:nth-child(odd) {
         .square {
-          &.move {
-            background-color: #ff7f74;
+          &.move, &.promote, &.left-castling, &.right-castling, &.enpassant {
             cursor: pointer;
           }
-
-          &.check {
-            background-color: #46cb51;
-            cursor: pointer;
-          }
-
-          &.enpassant, &.left-castling, &.right-castling {
-            background: linear-gradient(135deg, #ff7f74 25%, #b40 25%, #b40 50%, #ff7f74 50%, #ff7f74 75%, #b40 75%, #b40);
-            background-size:20px 20px;
-            cursor: pointer;
-          }
+          &.move { background-color: #ff7f74; }
+          &.promote { background-color: green; }
+          &.left-castling, &.right-castling { background-color: navy; }
+          &.enpassant { background-color: maroon; }
         }
       }
 
       .col:nth-child(even) {
         .square {
-          &.move {
-            background-color: #ffbabe;
+          &.move, &.promote, &.left-castling, &.right-castling, &.enpassant {
             cursor: pointer;
           }
-
-          &.check {
-            background-color: #92ff9d;
-            cursor: pointer;
-          }
-
-          &.enpassant, &.left-castling, &.right-castling {
-            background: linear-gradient(135deg, #ffbabe 25%, #b40 25%, #b40 50%, #ffbabe 50%, #ffbabe 75%, #b40 75%, #b40);
-            background-size:20px 20px;
-            cursor: pointer;
-          }
+          &.move { background-color: #ffbabe; }
+          &.promote { background-color: #5CAB69; }
+          &.left-castling, &.right-castling { background-color: #141a80; }
+          &.enpassant { background-color: #802426; }
         }
       }
     }
@@ -217,41 +201,25 @@ body {
     &.odd {
       .col:nth-child(even) {
         .square {
-          &.move {
-            background-color: #ff7f74;
+          &.move, &.promote, &.left-castling, &.right-castling, &.enpassant {
             cursor: pointer;
           }
-
-          &.check {
-            background-color: #46cb51;
-            cursor: pointer;
-          }
-
-          &.enpassant, &.left-castling, &.right-castling {
-            background: linear-gradient(135deg, #ff7f74 25%, #b40 25%, #b40 50%, #ff7f74 50%, #ff7f74 75%, #b40 75%, #b40);
-            background-size:20px 20px;
-            cursor: pointer;
-          }
+          &.move { background-color: #ff7f74; }
+          &.promote { background-color: green; }
+          &.left-castling, &.right-castling { background-color: navy; }
+          &.enpassant { background-color: maroon; }
         }
       }
 
       .col:nth-child(odd) {
         .square {
-          &.move {
-            background-color: #ffbabe;
+          &.move, &.promote, &.left-castling, &.right-castling, &.enpassant {
             cursor: pointer;
           }
-
-          &.check {
-            background-color: #92ff9d;
-            cursor: pointer;
-          }
-
-          &.enpassant, &.left-castling, &.right-castling {
-            background: linear-gradient(135deg, #ffbabe 25%, #b40 25%, #b40 50%, #ffbabe 50%, #ffbabe 75%, #b40 75%, #b40);
-            background-size:20px 20px;
-            cursor: pointer;
-          }
+          &.move { background-color: #ffbabe; }
+          &.promote { background-color: #5CAB69; }
+          &.left-castling, &.right-castling { background-color: #141a80; }
+          &.enpassant { background-color: #802426; }
         }
       }
     }

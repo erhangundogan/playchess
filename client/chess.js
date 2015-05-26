@@ -49,7 +49,7 @@ Template.col.events({
   'click .piece:not(.selected)': function(event) {
     if (!$(event.target).hasClass(window.chess.turn)) return;
 
-    // clear if there is a selected piece
+    // clear if there is another selected piece
     $('.square.selected').removeClass('selected');
 
     // remove selected flag
@@ -62,6 +62,7 @@ Template.col.events({
     $('.square.move')
       .removeClass('move')
       .removeClass('enpassant')
+      .removeClass('promote')
       .removeClass('left-castling')
       .removeClass('right-castling')
       .removeClass('check');
@@ -90,13 +91,14 @@ Template.col.events({
       if (item.isEnPassant) {
         $(foundItem).addClass('enpassant');
       }
-
       if (item.isCastling) {
         $(foundItem).addClass(item.isCastling + '-castling');
       }
-
       if (item.isCheck) {
         $(foundItem).addClass('check');
+      }
+      if (item.isPromote) {
+        $(foundItem).addClass('promote');
       }
     });
   },
@@ -107,6 +109,7 @@ Template.col.events({
     $('.square.move')
       .removeClass('move')
       .removeClass('enpassant')
+      .removeClass('promote')
       .removeClass('left-castling')
       .removeClass('right-castling')
       .removeClass('check');
@@ -135,6 +138,7 @@ Template.col.events({
     $('.square.selected').removeClass('selected');
     $('.square.move').removeClass('move');
     $('.square.enpassant').removeClass('enpassant');
+    $('.square.promote').removeClass('promote');
     $('.square.left-castling').removeClass('left-castling');
     $('.square.right-castling').removeClass('right-castling');
     $('.square.check').removeClass('check');
