@@ -554,12 +554,19 @@
           } else if (self.is('king') && Math.abs(colDiff) === 2) {
             // it is castling
             if ((self.white && colAmount === '+2') || (!self.white && colAmount === '+2')) {
-              // white right castling
+              // right castling
               testPosition.isCastling = 'right';
               return testPosition;
             } else if ((self.white && colAmount === '-2') || (!self.white && colAmount === '-2')) {
-              // white left castling
+              // left castling
               testPosition.isCastling = 'left';
+              return testPosition;
+            }
+          } else if (self.is('king')) {
+            // king cannot move to threatened position
+            var hasThreat = currentGame.checkPositionThreat(self.white, newRow, newCol);
+            if (!hasThreat) {
+              testPosition.isCaptured = false;
               return testPosition;
             }
           } else {
@@ -591,7 +598,7 @@
       }
     }
 
-    // pawn has special movements so we are getting function
+    // pawn and king has special movements so we are getting function
     // and passing arguments to get patterns
     if (typeof pattern === 'function') {
       if (self.is('pawn')) {
