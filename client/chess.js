@@ -133,7 +133,17 @@ Template.col.events({
       return;
     }
 
-    currentPiece.moveTo(newRow, newCol, isEnPassant, isLeftCastling, isRightCastling);
+    var moveResult = currentPiece.moveTo(newRow, newCol, isEnPassant, isLeftCastling, isRightCastling);
+
+    if (moveResult.check && moveResult.check.position) {
+      $('[data-row='
+        + (moveResult.check.position.row+1)
+        +'][data-col-index='
+        + moveResult.check.position.col +']')
+        .addClass('check');
+    } else {
+      $('.square.check').removeClass('check');
+    }
 
     $('.square.selected').removeClass('selected');
     $('.square.move').removeClass('move');
@@ -141,7 +151,6 @@ Template.col.events({
     $('.square.promote').removeClass('promote');
     $('.square.left-castling').removeClass('left-castling');
     $('.square.right-castling').removeClass('right-castling');
-    $('.square.check').removeClass('check');
 
     Session.set('chess', window.chess);
   }

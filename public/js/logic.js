@@ -111,9 +111,10 @@
      * @param {boolean} isWhite - Is it white user (isWhite === true)
      * @param {boolean} isFirstMove - Is it pawn's first movement
      * @param {position} currentPosition - Current position of pawn
+     * @param {boolean} isThreatCheck - should be true to detect pawn capture ability
      * @returns {Array.<[string, string]>} - Possible movements array
      */
-    pawn: function (isWhite, isFirstMove, currentPosition) {
+    pawn: function (isWhite, isFirstMove, currentPosition, isThreatCheck) {
 
       // standard movement
       var movementPattern = {
@@ -167,6 +168,9 @@
 
       if (rightCapturePiece && rightCapturePiece.white !== isWhite) {
         selectedMovementPattern.push(selectedCapturePattern[0]);
+      } else if (isThreatCheck) {
+        // detect threat for king, add possible capture points to pawn movements
+        selectedMovementPattern.push(selectedCapturePattern[0]);
       }
 
       // capture on the left
@@ -175,6 +179,9 @@
         currentPosition.col + parseInt(selectedCapturePattern[1][1]));
 
       if (leftCapturePiece && leftCapturePiece.white !== isWhite) {
+        selectedMovementPattern.push(selectedCapturePattern[1]);
+      } else if (isThreatCheck) {
+        // detect threat for king, add possible capture points to pawn movements
         selectedMovementPattern.push(selectedCapturePattern[1]);
       }
 
@@ -355,12 +362,15 @@
     var oldPosition = this.position;
     var newPosition = new position(newRow, newCol);
     var currentUser = this.white ? currentGame.white : currentGame.black;
+    var otherUser = this.white ? currentGame.black : currentGame.white;
 
     var timeAndMovement = {};
     var capturedPiece = null;
     var rookColumn = null;
     var rookRow = null;
     var rook = null;
+    var attackerPosition = null;
+    var kingPosition = null;
 
     var setMovementFlags = function (currentPiece, newPosition, oldPosition) {
       // calculate elapsed time and replace timer with new one
@@ -449,19 +459,24 @@
       currentUser.castling = [false, false];
     }
 
-    // change turn to another player
-    if (currentGame.turn === 'white') {
-      currentGame.turn = 'black';
-      currentGame.white.history.push(timeAndMovement.currentMovement);
-      currentGame.white.elapsedTime.push(timeAndMovement.timeDiff);
-    } else {
-      currentGame.turn = 'white';
-      currentGame.black.history.push(timeAndMovement.currentMovement);
-      currentGame.black.elapsedTime.push(timeAndMovement.timeDiff);
+    currentGame[currentGame.turn].history.push(timeAndMovement.currentMovement);
+    currentGame[currentGame.turn].elapsedTime.push(timeAndMovement.timeDiff);
+
+    var undoMovement = currentUser.isCheck(); // cannot move there because there is a threat
+    var isCheck = otherUser.isCheck(); // isCheck?
+
+    if (isCheck) {
+      kingPosition = otherUser.getKing();
     }
+    var undoLastMovement = currentUser.getLastMove();
 
-    return this;
+    // change turn to another player
+    currentGame.turn = currentGame.turn === 'white' ? 'black' : 'white';
 
+    return {
+      undo: undoMovement,
+      check: kingPosition
+    };
   };
 
   /**
@@ -495,7 +510,7 @@
    * Gets possible movements of a piece.
    * @returns {Array}
    */
-  piece.prototype.getMoves = function () {
+  piece.prototype.getMoves = function (isThreatCheck) {
     var self = this;
     var moves = [];
     var pattern = patterns[self.typeName]; // get appropriate pattern
@@ -602,7 +617,7 @@
     // and passing arguments to get patterns
     if (typeof pattern === 'function') {
       if (self.is('pawn')) {
-        pattern = pattern(self.white, self.moves.length === 0, currentPosition);
+        pattern = pattern(self.white, self.moves.length === 0, currentPosition, isThreatCheck);
       } else if (self.is('king')) {
         var castlingOption = self.white ? currentGame.white.castling : currentGame.black.castling;
         pattern = pattern(self.white);
@@ -814,19 +829,20 @@
     return null;
   };
 
+  user.prototype.getKing = function() {
+    var self = this;
+    return _.find(self.pieces, function (piece) {
+      return piece.is('king');
+    });
+  };
+
   /**
    * Current user's last movement caused check?
    * @param {boolean} isWhite - is it white user?
    */
   user.prototype.isCheck = function () {
-    var self = this;
-    var kingPiece = _.find(self.pieces, function (piece) {
-      return piece.is('king');
-    });
-
-    console.log('CANNOT MOVE THERE!');
-
-    return currentGame.checkPositionThreat(self.white, kingPiece.row, kingPiece.col);
+    var kingPiece = this.getKing();
+    return currentGame.checkPositionThreat(this.white, kingPiece.position.row, kingPiece.position.col);
   };
 
   /**
@@ -1046,7 +1062,7 @@
    * @param {boolean} isWhite - if true, it finds threat against white player's piece otherwise black
    * @param {number} rowIndex - row number (0-7)
    * @param {number} colIndex - column number (0-7)
-   * @returns {boolean}
+   * @returns {object}
    */
   game.prototype.checkPositionThreat = function (isWhite, rowIndex, colIndex) {
 
@@ -1057,7 +1073,7 @@
     var allMovements = _.map(checkPiecesOf.pieces, function(piece) {
       // return all pieces' movements except king of opponent
       if (!piece.is('king')) {
-        return piece.getMoves();
+        return piece.getMoves(true);
       }
     });
 
