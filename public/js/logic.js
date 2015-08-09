@@ -156,9 +156,14 @@
       var selectedCapturePattern = capturePattern[isWhite ? 'white' : 'black'];
       var selectedEnPassantPattern = enPassantPattern[isWhite ? 'white' : 'black'];
 
-      // double square movement allowed?
-      if (!isFirstMove) {
-        selectedMovementPattern.splice(0, 1);
+      // we dont need pawn movements
+      if (isThreatCheck) {
+        selectedMovementPattern.splice(0, 2);
+      } else {
+        // double square movement allowed?
+        if (!isFirstMove) {
+          selectedMovementPattern.splice(0, 1);
+        }
       }
 
       // capture on the right
@@ -348,6 +353,8 @@
    *   add movement to piece's moves array
    *   add movement to user's history
    *   remove selected flag
+   *   check control, false movement control
+   *   create virtual board and test next movement
    *   change turn
    *   reset timer
    *   clear selected, move classes
@@ -363,7 +370,6 @@
     var newPosition = new position(newRow, newCol);
     var currentUser = this.white ? currentGame.white : currentGame.black;
     var otherUser = this.white ? currentGame.black : currentGame.white;
-
     var timeAndMovement = {};
     var capturedPiece = null;
     var rookColumn = null;
@@ -404,19 +410,18 @@
       };
     };
 
-    if (isEnPassant) {
+    var setEnPassant = function(currentPiece, newPosition, oldPosition) {
       // en passant capture
-      capturedPiece = currentGame.getPieceAt((this.white ? newRow - 1 : newRow + 1), newCol);
+      var capturedPiece = currentGame.getPieceAt(
+        (currentPiece.white ? newPosition.row - 1 : newPosition.row + 1), newPosition.col);
 
       if (capturedPiece) {
         capturedPiece.capture();
       }
       timeAndMovement = setMovementFlags(this, newPosition, oldPosition);
+    };
 
-    } else if (isLeftCastling || isRightCastling) {
-      // move king and then rook
-      setMovementFlags(this, newPosition, oldPosition);
-
+    var setCastling = function(isLeftCastling, currentUser) {
       // rook column movement after castling
       var rookColumnMove = isLeftCastling ? 3 : -2;
 
@@ -433,10 +438,17 @@
 
       // move rook
       timeAndMovement = setMovementFlags(rook, rookNewPosition, rookCurrentPosition);
+    };
 
+    if (isEnPassant) {
+      setEnPassant(this, newPosition, oldPosition);
+    } else if (isLeftCastling || isRightCastling) {
+      // move king and then rook
+      setMovementFlags(this, newPosition, oldPosition);
+      setCastling(isLeftCastling, currentUser);
     } else {
       // remove piece if it is captured
-      capturedPiece = currentGame.getPieceAt(newRow, newCol);
+      var capturedPiece = currentGame.getPieceAt(newRow, newCol);
       if (capturedPiece) {
         capturedPiece.capture();
       }
