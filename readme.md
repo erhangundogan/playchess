@@ -10,14 +10,54 @@ playchess
 * It is wrapped with MeteorJS but it can be used with any other framework.
 * It can be connected to backend system so there can be brute force, valuation or even ai logic to drive game play.
 * WebWorkers can be used instead of backend system for single play.
-
-## Chess Logic and Features
-
-* Application includes client game play using browser events with Meteor.
-* It doesn't includes Chess AI, valuation or brute force logic at the moment.
+* Application includes client game play using browser events over dom.
 
 ## Motivation
 
 * Chess is my personal interest
 * Create a game using MeteorJS
 
+## Installation (Run dev environment)
+
+* git clone https://github.com/erhangundogan/chess.git
+
+* cd chess
+
+* npm install -d
+
+* bower install
+
+* cd src
+
+* python -m SimpleHTTPServer
+
+## Installation (Test/Production)
+
+* karma start karma.conf.js
+
+* grunt
+
+* cd dist
+
+* python -m SimpleHTTPServer
+
+### Issues (Game play)
+
+* Promotion and change piece
+
+* Check-mate
+
+### Author
+
+**Erhan Gundogan**
+
+* http://github.com/erhangundogan
+* http://twitter.com/erhangundogan
+* http://tr.linkedin.com/in/erhangundogan/
+
+License
+=======
+
+Copyright 2015 Erhan Gundogan
+
+Licensed under the [MIT](LICENSE) License.
