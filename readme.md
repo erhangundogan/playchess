@@ -19,27 +19,11 @@ playchess
 
 ## Installation (Run dev environment)
 
-* git clone https://github.com/erhangundogan/chess.git
+* git clone https://github.com/erhangundogan/playchess.git
 
-* cd chess
+* cd playchess
 
-* npm install -d
-
-* bower install
-
-* cd src
-
-* python -m SimpleHTTPServer
-
-## Installation (Test/Production)
-
-* karma start karma.conf.js
-
-* grunt
-
-* cd dist
-
-* python -m SimpleHTTPServer
+* meteor
 
 ### Issues (Game play)
 
