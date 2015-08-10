@@ -1,7 +1,44 @@
 
-@dark: peru; // #d18b47
-@light: navajowhite; // #ffce9e
+@darkCellColor: peru;
+@lightCellColor: navajowhite;
+
+@darkSelectedCellColor: #4276ff;
+@lightSelectedCellColor: #a2cbff;
+
+@darkMovementCellColor: #ff7f74;
+@lightMovementCellColor: #ffbabe;
+
+@darkPromoteCellColor: green;
+@lightPromoteCellColor: #5CAB69;
+
+@darkCastlingCellColor: navy;
+@lightCastlingCellColor: #141a80;
+
+@darkEnPassantCellColor: maroon;
+@lightEnPassantCellColor: #802426;
+
 @border: black;
+@cellSize: 64px;
+@pieceSize: @cellSize / 1.25;
+@fontSize: 14px;
+@alertBorder: solid 5px red;
+@boardSize: 100%;
+@background: #CCC;
+
+@whiteKingUrl:    url('/image/pieces/white/king.svg');
+@whiteQueenUrl:   url('/image/pieces/white/queen.svg');
+@whiteBishopUrl:  url('/image/pieces/white/bishop.svg');
+@whitePawnUrl:    url('/image/pieces/white/pawn.svg');
+@whiteKnightUrl:  url('/image/pieces/white/knight.svg');
+@whiteRookUrl:    url('/image/pieces/white/rook.svg');
+
+@blackKingUrl:    url('/image/pieces/black/king.svg');
+@blackQueenUrl:   url('/image/pieces/black/queen.svg');
+@blackBishopUrl:  url('/image/pieces/black/bishop.svg');
+@blackPawnUrl:    url('/image/pieces/black/pawn.svg');
+@blackKnightUrl:  url('/image/pieces/black/knight.svg');
+@blackRookUrl:    url('/image/pieces/black/rook.svg');
+
 
 * {
   box-sizing: border-box;
@@ -12,7 +49,9 @@
 }
 
 body {
-  background-color: #CCC;
+  background-color: @background;
+  font-family: monospace;
+  font-size: @fontSize;
 }
 
 .piece {
@@ -23,7 +62,7 @@ body {
 
 
 .board {
-  width: 600px;
+  width: @boardSize;
   display: block;
   overflow: hidden;
 
@@ -37,43 +76,23 @@ body {
     white-space: nowrap;
 
     .chars-container {
-      margin-left: 32px;
+      margin-left: @cellSize / 2;
     }
 
     .char-col {
-      width: 64px;
-      height: 48px;
-      line-height: 48px;
+      width: @cellSize;
+      height: @cellSize / 2;
+      line-height: @cellSize / 2;
       text-align: center;
       display: inline-block;
       float: left;
     }
   }
 
-  /*
-  li.row:nth-child(3) {
-    .col {
-      .square {
-        border-top: solid 1px @border;
-      }
-    }
-  }
-
-  .rows {
-    li:nth-child(24) {
-      .col {
-        .square {
-          border-bottom: solid 1px @border;
-        }
-      }
-    }
-  }
-  */
-
   .row-begin, .row-end {
-    width: 32px;
-    height: 64px;
-    line-height: 64px;
+    width: @cellSize / 2;
+    height: @cellSize;
+    line-height: @cellSize;
     text-align: center;
     display: inline-block;
     float: left;
@@ -85,26 +104,12 @@ body {
 
   .col {
     .square {
-      width: 64px;
-      height: 64px;
+      width: @cellSize;
+      height: @cellSize;
       display: inline-block;
       float: left;
-      line-height: 64px;
+      line-height: @cellSize;
     }
-
-    /*
-    &:last-child {
-      .square {
-        border-right: solid 1px @border;
-      }
-    }
-
-    &:first-child {
-      .square {
-        border-left: solid 1px @border;
-      }
-    }
-    */
   }
 
   .row {
@@ -112,21 +117,22 @@ body {
       .square {
 
         &.white {
-          &.king { background: transparent url('/image/pieces/white/king.svg') no-repeat center center; }
-          &.queen { background: transparent url('/image/pieces/white/queen.svg') no-repeat center center; }
-          &.bishop { background: transparent url('/image/pieces/white/bishop.svg') no-repeat center center; }
-          &.pawn { background: transparent url('/image/pieces/white/pawn.svg') no-repeat center center; }
-          &.knight { background: transparent url('/image/pieces/white/knight.svg') no-repeat center center; }
-          &.rook { background: transparent url('/image/pieces/white/rook.svg') no-repeat center center; }
+          &.king { background: transparent @whiteKingUrl no-repeat center center; background-size: @pieceSize; }
+          &.queen { background: transparent @whiteQueenUrl no-repeat center center; background-size: @pieceSize; }
+          &.bishop { background: transparent @whiteBishopUrl no-repeat center center; background-size: @pieceSize; }
+          &.pawn { background: transparent @whitePawnUrl no-repeat center center; background-size: @pieceSize; }
+          &.knight { background: transparent @whiteKnightUrl no-repeat center center; background-size: @pieceSize; }
+          &.rook { background: transparent @whiteRookUrl no-repeat center center; background-size: @pieceSize; }
+
         }
 
         &.black {
-          &.king { background: transparent url('/image/pieces/black/king.svg') no-repeat center center; }
-          &.queen { background: transparent url('/image/pieces/black/queen.svg') no-repeat center center; }
-          &.bishop { background: transparent url('/image/pieces/black/bishop.svg') no-repeat center center; }
-          &.pawn { background: transparent url('/image/pieces/black/pawn.svg') no-repeat center center; }
-          &.knight { background: transparent url('/image/pieces/black/knight.svg') no-repeat center center; }
-          &.rook { background: transparent url('/image/pieces/black/rook.svg') no-repeat center center; }
+          &.king { background: transparent @blackKingUrl no-repeat center center; background-size: @pieceSize; }
+          &.queen { background: transparent @blackQueenUrl no-repeat center center; background-size: @pieceSize; }
+          &.bishop { background: transparent @blackBishopUrl no-repeat center center; background-size: @pieceSize; }
+          &.pawn { background: transparent @blackPawnUrl no-repeat center center; background-size: @pieceSize; }
+          &.knight { background: transparent @blackKnightUrl no-repeat center center; background-size: @pieceSize; }
+          &.rook { background: transparent @blackRookUrl no-repeat center center; background-size: @pieceSize; }
         }
       }
     }
@@ -134,13 +140,13 @@ body {
     &.even {
       .col:nth-child(odd) {
         .square {
-          background-color: @dark;
+          background-color: @darkCellColor;
         }
       }
 
       .col:nth-child(even) {
         .square {
-          background-color: @light;
+          background-color: @lightCellColor;
         }
       }
     }
@@ -148,13 +154,13 @@ body {
     &.odd {
       .col:nth-child(even) {
         .square {
-          background-color: @dark;
+          background-color: @darkCellColor;
         }
       }
 
       .col:nth-child(odd) {
         .square {
-          background-color: @light;
+          background-color: @lightCellColor;
         }
       }
     }
@@ -164,12 +170,12 @@ body {
         .square {
 
           &.over {
-            background-color: #a2cbff;
+            background-color: @lightSelectedCellColor;
             cursor: pointer;
           }
 
           &.selected {
-            background-color: #4276ff;
+            background-color: @darkSelectedCellColor;
             cursor: pointer;
           }
         }
@@ -182,11 +188,11 @@ body {
           &.move, &.promote, &.left-castling, &.right-castling, &.enpassant {
             cursor: pointer;
           }
-          &.move { background-color: #ff7f74; }
-          &.promote { background-color: green; }
-          &.left-castling, &.right-castling { background-color: navy; }
-          &.enpassant { background-color: maroon; }
-          &.check { border: solid 5px red; }
+          &.move { background-color: @darkMovementCellColor; }
+          &.promote { background-color: @darkPromoteCellColor; }
+          &.left-castling, &.right-castling { background-color: @darkCastlingCellColor; }
+          &.enpassant { background-color: @darkEnPassantCellColor; }
+          &.check { border: @alertBorder; }
         }
       }
 
@@ -195,11 +201,11 @@ body {
           &.move, &.promote, &.left-castling, &.right-castling, &.enpassant {
             cursor: pointer;
           }
-          &.move { background-color: #ffbabe; }
-          &.promote { background-color: #5CAB69; }
-          &.left-castling, &.right-castling { background-color: #141a80; }
-          &.enpassant { background-color: #802426; }
-          &.check { border: solid 5px red; }
+          &.move { background-color: @lightMovementCellColor; }
+          &.promote { background-color: @lightPromoteCellColor; }
+          &.left-castling, &.right-castling { background-color: @lightCastlingCellColor; }
+          &.enpassant { background-color: @lightEnPassantCellColor; }
+          &.check { border: @alertBorder; }
         }
       }
     }
@@ -210,11 +216,11 @@ body {
           &.move, &.promote, &.left-castling, &.right-castling, &.enpassant {
             cursor: pointer;
           }
-          &.move { background-color: #ff7f74; }
-          &.promote { background-color: green; }
-          &.left-castling, &.right-castling { background-color: navy; }
-          &.enpassant { background-color: maroon; }
-          &.check { border: solid 5px red; }
+          &.move { background-color: @darkMovementCellColor; }
+          &.promote { background-color: @darkPromoteCellColor; }
+          &.left-castling, &.right-castling { background-color: @darkCastlingCellColor; }
+          &.enpassant { background-color: @darkEnPassantCellColor; }
+          &.check { border: @alertBorder; }
         }
       }
 
@@ -223,11 +229,11 @@ body {
           &.move, &.promote, &.left-castling, &.right-castling, &.enpassant {
             cursor: pointer;
           }
-          &.move { background-color: #ffbabe; }
-          &.promote { background-color: #5CAB69; }
-          &.left-castling, &.right-castling { background-color: #141a80; }
-          &.enpassant { background-color: #802426; }
-          &.check { border: solid 5px red; }
+          &.move { background-color: @lightMovementCellColor; }
+          &.promote { background-color: @lightPromoteCellColor; }
+          &.left-castling, &.right-castling { background-color: @lightCastlingCellColor; }
+          &.enpassant { background-color: @lightEnPassantCellColor; }
+          &.check { border: @alertBorder; }
         }
       }
     }
