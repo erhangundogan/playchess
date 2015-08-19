@@ -262,21 +262,32 @@
 
   /**
    * Represents movement of a piece.
-   * @constructor
    * @param {position} before - position before movement
    * @param {position} after - position after movement
+   * @param {string} specialMovement - special movement if exists
    * @returns {movement}
    */
-  var movement = function (before, after) {
+  var movement = function (before, after, specialMoves) {
     this.id = getUniqueId(24);
     this.before = before; // row, col position before movement
     this.after = after; // row, col position after movement
 
-    // TODO: put piece instead of pieceId or put _id and subDocument
+    // TODO: special movement assisgnment missing
     this.pieceId = null; // type of piece from pieces collection
     this.duration = 0; // movement duration
-    this.special = []; // enpassant, castling, promote, check, checkmate, draw
+    this.special = []; // castling, promote, check, checkmate, draw
 
+    if (specialMoves) {
+      if (specialMoves.leftCastling) {
+        this.special.push('leftCastling');
+      }
+      if (specialMoves.rightCastling) {
+        this.special.push('rightCastling');
+      }
+      if (specialMoves.check) {
+        this.special.push('check');
+      }
+    }
     return this;
   };
 
@@ -366,6 +377,11 @@
    * @param {boolean} isRightCastling - Is it right castling
    */
   piece.prototype.moveTo = function (newRow, newCol, isEnPassant, isLeftCastling, isRightCastling) {
+
+    // TODO: handle virtual snapshots
+    //var currentBoard = currentGame.createVirtualBoard();
+    var game = currentGame.saveLocal();
+
     var oldPosition = this.position;
     var newPosition = new position(newRow, newCol);
     var currentUser = this.white ? currentGame.white : currentGame.black;
@@ -378,14 +394,17 @@
     var attackerPosition = null;
     var kingPosition = null;
 
-    var setMovementFlags = function (currentPiece, newPosition, oldPosition) {
+    var setMovementFlags = function (currentPiece, newPosition, oldPosition, isLeftCastling, isRightCastling) {
       // calculate elapsed time and replace timer with new one
       var currentTime = (new Date()).getTime();
       var timeDiff = currentTime - currentGame.timer;
       currentGame.timer = currentTime;
 
       // create movement record
-      var currentMovement = new movement(oldPosition, newPosition);
+      var currentMovement = new movement(oldPosition, newPosition, {
+        leftCastling: isLeftCastling,
+        rightCastling: isRightCastling
+      });
       currentMovement.pieceId = currentPiece.id;
       currentMovement.duration = timeDiff;
 
@@ -412,13 +431,13 @@
 
     var setEnPassant = function(currentPiece, newPosition, oldPosition) {
       // en passant capture
-      var capturedPiece = currentGame.getPieceAt(
+      capturedPiece = currentGame.getPieceAt(
         (currentPiece.white ? newPosition.row - 1 : newPosition.row + 1), newPosition.col);
 
       if (capturedPiece) {
         capturedPiece.capture();
       }
-      timeAndMovement = setMovementFlags(this, newPosition, oldPosition);
+      timeAndMovement = setMovementFlags(currentPiece, newPosition, oldPosition);
     };
 
     var setCastling = function(isLeftCastling, currentUser) {
@@ -437,7 +456,7 @@
       rook = currentGame.getPieceAt(rookCurrentRow, rookCurrentColumn);
 
       // move rook
-      timeAndMovement = setMovementFlags(rook, rookNewPosition, rookCurrentPosition);
+      timeAndMovement = setMovementFlags(rook, rookNewPosition, rookCurrentPosition, isLeftCastling, isRightCastling);
     };
 
     if (isEnPassant) {
@@ -448,7 +467,7 @@
       setCastling(isLeftCastling, currentUser);
     } else {
       // remove piece if it is captured
-      var capturedPiece = currentGame.getPieceAt(newRow, newCol);
+      capturedPiece = currentGame.getPieceAt(newRow, newCol);
       if (capturedPiece) {
         capturedPiece.capture();
       }
@@ -470,6 +489,8 @@
       // if it is king set both castling false
       currentUser.castling = [false, false];
     }
+
+    //debugger;
 
     currentGame[currentGame.turn].history.push(timeAndMovement.currentMovement);
     currentGame[currentGame.turn].elapsedTime.push(timeAndMovement.timeDiff);
@@ -841,6 +862,10 @@
     return null;
   };
 
+  /**
+   * Get user's king
+   * @returns {piece}
+   */
   user.prototype.getKing = function() {
     var self = this;
     return _.find(self.pieces, function (piece) {
@@ -995,7 +1020,7 @@
    * @returns {Array.<piece>} - current user's pieces
    */
   game.prototype.init = function (isWhite) {
-    var position = isWhite ? defaultWhitePosition : defaultBlackPosition;
+    var pos = isWhite ? defaultWhitePosition : defaultBlackPosition;
     var pieces = isWhite ? defaultWhitePieces : defaultBlackPieces;
     var self = this;
 
@@ -1003,7 +1028,7 @@
     return _.map(pieces, function (item, index) {
 
       // clone default position
-      var newPosition = _.clone(position);
+      var newPosition = _.clone(pos);
 
       // create new piece according to default arguments
       var newPiece = new piece(item, isWhite, newPosition);
@@ -1019,14 +1044,32 @@
       }
 
       // max 8 columns
-      position.col = ++position.col % 8;
+      pos.col = ++pos.col % 8;
 
       // setup second row of pieces
-      if (position.col === 0) {
-        position.row = isWhite ? self.white.placement.lastRow : self.black.placement.firstRow;
+      if (pos.col === 0) {
+        pos.row = isWhite ? self.white.placement.lastRow : self.black.placement.firstRow;
       }
       return newPiece;
     });
+  };
+
+  game.prototype.serialize = function() {
+    return JSON.stringify(this);
+  };
+
+  game.prototype.saveLocal = function() {
+    if (localStorage) {
+      localStorage.setItem('chess', this.serialize());
+    }
+  };
+
+  game.prototype.savePersistStorage = function() {
+
+  };
+
+  game.prototype.createVirtualBoard = function() {
+    return JSON.parse(JSON.stringify(this.board));
   };
 
   /**

@@ -1,0 +1,27 @@
+<template name="board">
+  <div class="board">
+    <ul class="rows">
+
+      <li class="chars-container">
+        <ol class="cols">
+          {{#each chars}}
+            {{>charCol}}
+          {{/each}}
+        </ol>
+      </li>
+
+      {{#each rows}}
+        {{>row}}
+      {{/each}}
+
+      <li class="chars-container clear-left">
+        <ol class="cols">
+          {{#each chars}}
+            {{>charCol}}
+          {{/each}}
+        </ol>
+      </li>
+
+    </ul>
+  </div>
+</template>

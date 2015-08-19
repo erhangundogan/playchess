@@ -1,0 +1,15 @@
+<template name="row">
+  <li>
+    <div class="row-begin">{{this}}</div>
+  </li>
+  <li class="row {{oddEven}}" data-row="{{this}}">
+    <ol class="cols">
+      {{#each cols}}
+        {{>col}}
+      {{/each}}
+    </ol>
+  </li>
+  <li>
+    <div class="row-end">{{this}}</div>
+  </li>
+</template>

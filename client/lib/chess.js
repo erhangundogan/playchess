@@ -1,3 +1,7 @@
+Accounts.ui.config({
+  passwordSignupFields: "USERNAME_ONLY"
+});
+
 Template.board.helpers({
   rows: [ 8,  7,  6,  5,  4,  3,  2,  1 ],
   chars: [ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' ]
@@ -153,6 +157,27 @@ Template.col.events({
     $('.square.right-castling').removeClass('right-castling');
 
     Session.set('chess', window.chess);
+
+    var self = this;
+    if (!self._id) {
+      Games.insert({ game: window.chess }, function(result) {
+        debugger;
+      });
+    } else {
+      Games.update(self._id, {
+        $set: {
+          game: window.chess
+        }
+      });
+    }
+
+    /*
+    debugger;
+    ChessGame.update(this._id, {
+      $set: {game: window.chess}
+    });
+    */
+
   }
 });
 
