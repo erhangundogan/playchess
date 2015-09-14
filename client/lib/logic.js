@@ -10,6 +10,7 @@
   'use strict';
 
   var currentGame = null;
+  var idLen = 17;
 
   /**
    * Chessboard column names
@@ -268,7 +269,7 @@
    * @returns {movement}
    */
   var movement = function (before, after, specialMoves) {
-    this.id = getUniqueId(24);
+    this.id = getUniqueId(idLen);
     this.before = before; // row, col position before movement
     this.after = after; // row, col position after movement
 
@@ -320,7 +321,7 @@
    * @returns {piece}
    */
   var piece = function (type, white, position) {
-    this.id = getUniqueId(24);
+    this.id = getUniqueId(idLen);
     this.type = type; // type of piece: ['pawn', 'knight', 'bishop', 'rook', 'queen', 'king']
     this.typeName = pieces[type];
     this.white = !!white;
@@ -828,8 +829,8 @@
    * @param {boolean} isWhite - is it white user?
    * @returns {user}
    */
-  var user = function (isWhite) {
-    this.id = getUniqueId(24);
+  var user = function (id, isWhite) {
+    this.id = id; //getUniqueId(idLen);
     this.info = null;
     this.elapsedTime = [];
     this.white = !!isWhite; // current user has white pieces or not
@@ -979,25 +980,14 @@
    * @constructor
    * @returns {game}
    */
-  var game = function () {
-    this.id = getUniqueId(24);
+  var game = function (id) {
+    this.id = id;
 
     // chessboard array setup
     this.board = [];
     for (var r = 0; r < 8; r++) {
       this.board.push(new Array(8));
     }
-
-    // white pieces setup
-    this.white = new user(true);
-    this.white.pieces = this.init(true);
-
-    // black pieces setup
-    this.black = new user();
-    this.black.pieces = this.init();
-
-    // set begin time
-    this.timer = (new Date()).getTime();
 
     // active user
     this.turn = 'white'; // which user's turn
@@ -1006,6 +996,29 @@
     this.selectedPiece = null;
 
     return this;
+  };
+
+  /**
+   * Create game with id
+   * @param id
+   * @returns {game}
+   */
+  game.prototype.createUser = function(id, isWhite) {
+
+    if (isWhite) {
+      // white pieces setup
+      this.white = new user(id, true);
+      this.white.pieces = this.init(true);
+    } else {
+      // black pieces setup
+      this.black = new user(id);
+      this.black.pieces = this.init();
+    }
+
+    if (this.white && this.black) {
+      // set begin time
+      this.timer = (new Date()).getTime();
+    }
   };
 
   /**
@@ -1098,17 +1111,22 @@
     // is it valid square
     if (rowIndex >= 0 && colIndex >= 0) {
 
-      // find in white pieces
-      foundItem = findPiece(true);
-      if (foundItem) {
-        return foundItem;
+      if (this.white) {
+        // find in white pieces
+        foundItem = findPiece(true);
+        if (foundItem) {
+          return foundItem;
+        }
       }
 
-      // find in black pieces
-      foundItem = findPiece();
-      if (foundItem) {
-        return foundItem;
+      if (this.black) {
+        // find in black pieces
+        foundItem = findPiece();
+        if (foundItem) {
+          return foundItem;
+        }
       }
+
     }
   };
 
@@ -1148,7 +1166,7 @@
    */
   function getUniqueId(len) {
     var buf = [],
-      chars = "ABCDEF0123456789",
+      chars = "abcdefghijklmnopqrstuvwyxzABCDEFGHIJKLMNOPQRSTUVWYXZ0123456789",
       charlen = chars.length,
       firstAlphaNumeric = firstAlphaNumeric || false;
 
@@ -1163,9 +1181,69 @@
     return buf.join("");
   }
 
-  // create new game
-  currentGame = new game();
-  global.chess = currentGame;
-  global.Session.set('chess', currentGame);
+  /**
+   * Get: returns game object
+   * createGame: creates game with id
+   * setGame: creates game from JSON game object or string
+   * SetUser: creates either white or black user with provided id
+   * @type {{get: Function, createGame: Function, setGame: Function, setUser: Function}}
+   */
+
+  global.playchess = {
+    createGame: function(id, callback) {
+      if (!currentGame) {
+        // create new game
+        if (id) {
+          currentGame = new game(id);
+          window.chess = currentGame;
+          Session.set('chess', currentGame);
+          callback(currentGame);
+        } else {
+          console.error('Game cannot be created without id!');
+        }
+      } else {
+        console.error('Game already exists!');
+      }
+      return null;
+    },
+    setGame: function(game) {
+      if (game) {
+        if (_.isString(game)) {
+          currentGame = JSON.parse(game);
+        } else if (_.isObject(game)) {
+          currentGame = game;
+        } else {
+          console.error('Cannot create game!');
+        }
+        window.chess = currentGame;
+      }
+    },
+    setUser: function(id, isWhite) {
+      debugger;
+      if (currentGame) {
+        if (id) {
+          if (isWhite) {
+            if (currentGame.white) {
+              console.error('White user already exists!');
+            } else {
+              currentGame.createUser(id, true);
+            }
+          } else {
+            if (currentGame.black) {
+              console.error('Black user already exists!');
+            } else {
+              currentGame.createUser(id, false);
+            }
+          }
+          window.chess = currentGame;
+          Session.set('chess', currentGame);
+        } else {
+          console.error('User cannot create without id!');
+        }
+      } else {
+        console.error('Please create game first!');
+      }
+    }
+  };
 
 })(window);

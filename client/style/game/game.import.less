@@ -24,7 +24,7 @@
 @pieceSize: @cellSize / 1.25;
 @fontSize: 14px;
 
-@boardSize: 100%;
+@boardSize: @cellSize * 9;
 @background: #CCC;
 
 @whiteKingUrl:    url('/image/pieces/white/king.svg');
@@ -52,7 +52,7 @@
 
 body {
   background-color: @background;
-  font-family: monospace;
+  font-family: "Open Sans", sans-serif;
   font-size: @fontSize;
 }
 
@@ -62,11 +62,48 @@ body {
   z-index: 1;
 }
 
-
 .board {
   width: @boardSize;
-  display: block;
+  margin: 20px auto;
   overflow: hidden;
+  position: relative;
+  font-family: monospace;
+  font-size: 18px;
+
+  .overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: #CCC;
+    opacity: .5;
+    z-index: 4;
+  }
+
+  .overlay-message {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .join-button {
+      padding: 20px;
+      color: white;
+      background-color: lightseagreen;
+      border: solid 1px darkcyan;
+      border-radius: 5px;
+      font-size: 24px;
+      font-weight: bold;
+      cursor: pointer;
+
+      &:hover {
+        background-color: #14706b;
+        border: solid 1px #004747;
+      }
+    }
+  }
 
   ul, ol {
     list-style-type: none;

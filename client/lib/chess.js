@@ -7,6 +7,40 @@ Template.board.helpers({
   chars: [ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' ]
 });
 
+Template.board.events({
+  'click .join-button': function(event) {
+    var userId = Meteor.userId();
+    var gameId = Session.get('gameId');
+    var game = Games.findOne(gameId);
+
+    debugger;
+
+    if (userId) {
+      // remove user from spectators and add to players
+      // check players count
+
+      debugger;
+
+      if (game && game.players && game.players.length < 2) {
+        game.spectators = _.without(game.spectators, userId);
+        game.players.push(userId);
+
+        if (game.players.length === 2) {
+          game.game.setUser(game.players[0], true);
+          game.game.setUser(game.players[1], false);
+        }
+
+        Games.update(game._id, { $set: { spectators: game.spectators, players: game.players, game: game.game } });
+        Meteor.subscribe('games');
+      }
+
+    } else {
+      toastr.warning('Please sign in or register to join');
+    }
+  }
+});
+
+
 Template.row.helpers({
   cols: [ 0, 1, 2, 3, 4, 5, 6, 7 ],
   oddEven: function() {
@@ -23,14 +57,19 @@ Template.col.helpers({
     return chars[this];
   },
   checkSquare: function(row, col) {
-    var rowIndex = parseInt(row) - 1;
-    var colIndex = parseInt(col);
-    var chess = Session.get('chess');
-    var piece = window.chess.getPieceAt(rowIndex, colIndex);
+    var chess = window.chess || Session.get('chess');
+    if (chess) {
+      var rowIndex = parseInt(row) - 1;
+      var colIndex = parseInt(col);
 
-    if (piece) {
-      var color = piece.white ? 'white' : 'black';
-      return ' piece ' + color + ' ' + piece.typeName;
+      if (chess.getPieceAt) {
+        var piece = chess.getPieceAt(rowIndex, colIndex);
+
+        if (piece) {
+          var color = piece.white ? 'white' : 'black';
+          return ' piece ' + color + ' ' + piece.typeName;
+        }
+      }
     }
   }
 });
@@ -157,26 +196,6 @@ Template.col.events({
     $('.square.right-castling').removeClass('right-castling');
 
     Session.set('chess', window.chess);
-
-    var self = this;
-    if (!self._id) {
-      Games.insert({ game: window.chess }, function(result) {
-        debugger;
-      });
-    } else {
-      Games.update(self._id, {
-        $set: {
-          game: window.chess
-        }
-      });
-    }
-
-    /*
-    debugger;
-    ChessGame.update(this._id, {
-      $set: {game: window.chess}
-    });
-    */
 
   }
 });

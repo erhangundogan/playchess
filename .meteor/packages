@@ -5,8 +5,12 @@
 # but you can also edit it by hand.
 
 meteor-platform
-autopublish
-insecure
 less
 underscore
 mike:mocha
+peerlibrary:async
+accounts-ui
+accounts-password
+iron:router
+matb33:collection-hooks
+chrismbeckett:toastr
