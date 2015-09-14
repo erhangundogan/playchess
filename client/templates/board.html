@@ -1,6 +1,28 @@
 <template name="board">
 
-  <div class="board">
+  <div class="board clearfix">
+
+    <div class="people">
+
+      <div class="spectators-container">
+        <h3>Spectators</h3>
+        <ul class="spectators">
+          {{#each spectators}}
+            <a href="/user/{{this}}">{{this}}</a>
+          {{/each}}
+        </ul>
+      </div>
+
+      <div class="players-container">
+        <h3>Players</h3>
+        <ul class="players">
+          {{#each players}}
+            <a href="/user/{{this}}">{{this}}</a>
+          {{/each}}
+        </ul>
+      </div>
+
+    </div>
 
     <div class="overlay-message">
       <input type="button" value="Join Game" class="join-button" />

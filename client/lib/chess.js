@@ -4,7 +4,23 @@ Accounts.ui.config({
 
 Template.board.helpers({
   rows: [ 8,  7,  6,  5,  4,  3,  2,  1 ],
-  chars: [ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' ]
+  chars: [ 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' ],
+  spectators: function() {
+    var game = Games.findOne(Session.get('gameId'));
+    if (game && game.spectators && game.spectators.length > 0) {
+      return game.spectators;
+    } else {
+      return [];
+    }
+  },
+  players: function() {
+    var game = Games.findOne(Session.get('gameId'));
+    if (game && game.players && game.players.length > 0) {
+      return game.players;
+    } else {
+      return [];
+    }
+  }
 });
 
 Template.board.events({
@@ -13,25 +29,27 @@ Template.board.events({
     var gameId = Session.get('gameId');
     var game = Games.findOne(gameId);
 
-    debugger;
-
-    if (userId) {
+    if (userId && game) {
       // remove user from spectators and add to players
       // check players count
 
-      debugger;
-
-      if (game && game.players && game.players.length < 2) {
+      if (game.players && game.players.length < 2) {
         game.spectators = _.without(game.spectators, userId);
         game.players.push(userId);
 
-        if (game.players.length === 2) {
-          game.game.setUser(game.players[0], true);
-          game.game.setUser(game.players[1], false);
+        if (playchess && game.players.length === 2) {
+          playchess.setUser(game.players[0], true);
+          playchess.setUser(game.players[1], false);
         }
 
-        Games.update(game._id, { $set: { spectators: game.spectators, players: game.players, game: game.game } });
-        Meteor.subscribe('games');
+        Games.update(game._id, {
+          $set: {
+            spectators: game.spectators,
+            players: game.players,
+            game: game.game
+          }
+        });
+        Session.set('spectators', game.spectators);
       }
 
     } else {
@@ -40,6 +58,13 @@ Template.board.events({
   }
 });
 
+Template.home.helpers({
+  gameList: function() {
+    Meteor.subscribe('gameList');
+    var gameList = Games.find({}, {fields: {'_id':1}}).fetch();
+    return gameList;
+  }
+});
 
 Template.row.helpers({
   cols: [ 0, 1, 2, 3, 4, 5, 6, 7 ],

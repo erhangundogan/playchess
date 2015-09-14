@@ -62,13 +62,35 @@ body {
   z-index: 1;
 }
 
+.footer-line {
+  width: 100%;
+}
+
 .board {
   width: @boardSize;
   margin: 20px auto;
-  overflow: hidden;
   position: relative;
   font-family: monospace;
   font-size: 18px;
+
+  .people {
+    position: absolute;
+    width: 200px;
+    top: 30px;
+    left: -140px;
+    overflow: hidden;
+    font-size: 12px;
+    font-family: monospace;
+    text-decoration: none;
+
+    .spectators-container, .players-container {
+      margin-bottom: 20px;
+
+      h3 {
+        font-size: 16px;
+      }
+    }
+  }
 
   .overlay {
     position: absolute;

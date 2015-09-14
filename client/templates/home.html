@@ -1,3 +1,11 @@
 <template name="home">
 
+  <h1>Games</h1>
+
+  <ul class="game-list">
+    {{#each gameList}}
+      {{>game}}
+    {{/each}}
+  </ul>
+
 </template>
