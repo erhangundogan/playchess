@@ -13,6 +13,12 @@ Meteor.publish('game', function(id) {
   return Games.findOne(id);
 });
 
+Meteor.publish("messages", function() {
+  this.session.socket.on("close", function() {
+    debugger;
+  });
+});
+
 Games.allow({
   insert: function (userId, doc) {
     return true;

@@ -29,11 +29,14 @@ Template.board.events({
     var gameId = Session.get('gameId');
     var game = Games.findOne(gameId);
 
-    if (userId && game) {
+    if (userId && game && game.players) {
       // remove user from spectators and add to players
       // check players count
+      var isPlayer = _.find(game.players, function(player) {
+        return player === userId;
+      });
 
-      if (game.players && game.players.length < 2) {
+      if (!isPlayer && game.players.length < 2) {
         game.spectators = _.without(game.spectators, userId);
         game.players.push(userId);
 
